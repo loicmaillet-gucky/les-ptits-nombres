@@ -117,12 +117,12 @@
 
         .toggle-group {
             display: flex; background: var(--bg-card);
-            border-radius: 15px; padding: 5px; margin-bottom: 15px;
+            border-radius: 15px; padding: 5px; margin-bottom: 10px;
         }
 
         .toggle-btn {
-            flex: 1; padding: 10px 20px; border: none; background: transparent;
-            color: var(--text-sub); font-size: 18px; font-weight: bold;
+            flex: 1; padding: 10px 15px; border: none; background: transparent;
+            color: var(--text-sub); font-size: 16px; font-weight: bold;
             border-radius: 10px; cursor: pointer;
         }
 
@@ -130,13 +130,13 @@
 
         .quiz-grid {
             display: grid; grid-template-columns: 1fr 1fr;
-            gap: 15px; width: 100%; max-width: 500px; margin-top: 20px;
+            gap: 15px; width: 100%; max-width: 500px; margin-top: 15px;
         }
 
         .quiz-choice {
             background: var(--bg-card); border: 2px solid #374151;
-            border-radius: 20px; padding: 25px;
-            font-size: 40px; font-weight: bold; color: white;
+            border-radius: 20px; padding: 20px;
+            font-size: 36px; font-weight: bold; color: white;
             cursor: pointer; text-align: center;
         }
 
@@ -183,17 +183,17 @@
             <button class="btn-icon" onclick="openScreen('screenSettings')">⚙️</button>
         </div>
         <div class="menu-grid">
-            <button class="menu-btn green" onclick="startNumbers(100)">
+            <button class="menu-btn green" onclick="startNumbers(1, 100)">
                 <div class="badge" style="background:#064e3b; color:#34d399;">🟢</div>
                 Niveau 1 (1-100)
             </button>
-            <button class="menu-btn yellow" onclick="startNumbers(200)">
+            <button class="menu-btn yellow" onclick="startNumbers(99, 201)">
                 <div class="badge" style="background:#78350f; color:#fbbf24;">🟡</div>
-                Niveau 2 (1-200)
+                Niveau 2 (99-201)
             </button>
-            <button class="menu-btn red" onclick="startNumbers(401)">
+            <button class="menu-btn red" onclick="startNumbers(199, 401)">
                 <div class="badge" style="background:#7f1d1d; color:#f87171;">🔴</div>
-                Niveau 3 (1-401)
+                Niveau 3 (199-401)
             </button>
             <button class="menu-btn blue" onclick="startLetters()">
                 <div class="badge" style="background:#1e3a8a; color:#60a5fa;">🔤</div>
@@ -243,17 +243,30 @@
             <div id="scoreDisplay" style="font-size: 20px; font-weight: bold; color: #f59e0b;">⭐ 0</div>
         </div>
 
-        <div class="toggle-group" style="margin: 10px auto;">
-            <button id="btnQuizMode1" class="toggle-btn active" onclick="setQuizMode(1)">Trouve le nombre</button>
+        <!-- Choix de la catégorie de Quiz -->
+        <div class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
+            <button id="btnQuizCatNumbers" class="toggle-btn active" onclick="setQuizCategory('numbers')">123 Nombres</button>
+            <button id="btnQuizCatSyllables" class="toggle-btn" onclick="setQuizCategory('syllables')">📚 Syllabes</button>
+        </div>
+
+        <!-- Sous-options Nombres -->
+        <div id="quizTypeGroup" class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
+            <button id="btnQuizMode1" class="toggle-btn active" onclick="setQuizMode(1)">Trouve la valeur</button>
             <button id="btnQuizMode2" class="toggle-btn" onclick="setQuizMode(2)">Répète après moi</button>
         </div>
 
+        <!-- Sous-options Syllabes (Niveau 1 / Niveau 2) -->
+        <div id="quizSylGroup" class="toggle-group" style="display:none; margin: 5px auto; width: 100%; max-width: 500px;">
+            <button id="btnQuizSylN1" class="toggle-btn active" onclick="setQuizSylLevel(1)">Syllabes N1</button>
+            <button id="btnQuizSylN2" class="toggle-btn" onclick="setQuizSylLevel(2)">Syllabes N2</button>
+        </div>
+
         <div class="display-area">
-            <div id="quizPrompt" style="font-size: 22px; text-align: center; margin-bottom: 20px; color: var(--text-sub);">
-                Écoute et choisis le bon nombre :
+            <div id="quizPrompt" style="font-size: 20px; text-align: center; margin-bottom: 15px; color: var(--text-sub);">
+                Écoute et choisis la bonne réponse :
             </div>
             <div id="quizBigDisplay" class="main-display" style="display:none;">?</div>
-            <button id="btnListenAgain" class="btn-action" style="margin-bottom: 20px; display:none;" onclick="speakCurrentQuiz()">🔊 Réécouter</button>
+            <button id="btnListenAgain" class="btn-action" style="margin-bottom: 15px; display:none;" onclick="speakCurrentQuiz()">🔊 Réécouter</button>
             <div id="quizChoices" class="quiz-grid"></div>
         </div>
     </div>
@@ -302,16 +315,22 @@
 
     <script>
         let currentMode = '';
+        let currentMinNumber = 1;
         let currentMaxNumber = 100;
         let isUppercase = true;
+        let currentRawLetter = 'A';
         let syllablesLevel = 1;
         let currentValue = '';
         let autoTimer = null;
-        let quizScore = 0;
-        let quizTarget = '';
-        let quizMode = 1;
 
-        const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tro","tu","va","ve","vi","vo","vu"];
+        // Variables Quiz
+        let quizScore = 0;
+        let quizCategory = 'numbers'; // 'numbers' ou 'syllables'
+        let quizSylLevel = 1;         // 1 ou 2
+        let quizTarget = '';
+        let quizMode = 1;             // 1: Trouve, 2: Répète
+
+        const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
         const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
 
         const rewards = [
@@ -320,35 +339,44 @@
             { icon: "🏆", word: "Excellent !" }
         ];
 
-        // Uniquement les 4 voix sélectionnées
-        function speak(text) {
+        function formatSpeechText(text, forceSyllables = false) {
+            if (currentMode === 'syllables' || forceSyllables) {
+                const letters = text.toString().toUpperCase().split('').join('... ');
+                return `${letters}... ${text}`;
+            }
+            return text.toString();
+        }
+
+        function speak(text, forceSyllables = false) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
+                
+                const spokenText = formatSpeechText(text, forceSyllables);
+                const utterance = new SpeechSynthesisUtterance(spokenText);
                 utterance.lang = 'fr-FR';
 
                 const style = document.getElementById('voiceStyleSelect').value;
 
                 switch (style) {
-                    case 'canard': // Canard Enjoué
+                    case 'canard':
                         utterance.pitch = 1.5;
-                        utterance.rate = 1.3;
+                        utterance.rate = 0.65;
                         break;
-                    case 'hero': // Super-Héros
+                    case 'hero':
                         utterance.pitch = 0.8;
-                        utterance.rate = 1.2;
+                        utterance.rate = 0.6;
                         break;
-                    case 'alien': // Alien de l'Espace
+                    case 'alien':
                         utterance.pitch = 1.9;
-                        utterance.rate = 0.75;
+                        utterance.rate = 0.5;
                         break;
-                    case 'speaker': // Présentateur TV
+                    case 'speaker':
                         utterance.pitch = 1.1;
-                        utterance.rate = 1.2;
+                        utterance.rate = 0.6;
                         break;
                     default:
                         utterance.pitch = 1.0;
-                        utterance.rate = 1.0;
+                        utterance.rate = 0.6;
                 }
 
                 window.speechSynthesis.speak(utterance);
@@ -365,10 +393,11 @@
             openScreen('screenMenu');
         }
 
-        function startNumbers(max) {
+        function startNumbers(min, max) {
             currentMode = 'numbers';
+            currentMinNumber = min;
             currentMaxNumber = max;
-            document.getElementById('displayTitle').innerText = `Nombres (1-${max})`;
+            document.getElementById('displayTitle').innerText = `Nombres (${min}-${max})`;
             document.getElementById('lettersToggle').style.display = 'none';
             document.getElementById('syllablesToggle').style.display = 'none';
             openScreen('screenDisplay');
@@ -388,7 +417,13 @@
             isUppercase = upper;
             document.getElementById('btnMAJ').classList.toggle('active', upper);
             document.getElementById('btnMIN').classList.toggle('active', !upper);
-            nextItem();
+            
+            if (currentMode === 'letters') {
+                currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
+                const mainDisplay = document.getElementById('mainText');
+                mainDisplay.innerText = currentValue;
+                speak(currentValue);
+            }
         }
 
         function startSyllables() {
@@ -413,11 +448,11 @@
             const hideSec = parseInt(document.getElementById('hideDelay').value);
 
             if (currentMode === 'numbers') {
-                currentValue = Math.floor(Math.random() * currentMaxNumber) + 1;
+                currentValue = Math.floor(Math.random() * (currentMaxNumber - currentMinNumber + 1)) + currentMinNumber;
             } else if (currentMode === 'letters') {
                 const charCode = Math.floor(Math.random() * 26) + 65;
-                let char = String.fromCharCode(charCode);
-                currentValue = isUppercase ? char : char.toLowerCase();
+                currentRawLetter = String.fromCharCode(charCode);
+                currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
             } else if (currentMode === 'syllables') {
                 const pool = syllablesLevel === 1 ? syllablesN1 : syllablesN2;
                 currentValue = pool[Math.floor(Math.random() * pool.length)];
@@ -428,12 +463,12 @@
                 mainDisplay.innerText = currentValue;
                 setTimeout(() => {
                     mainDisplay.classList.remove('hidden-val');
-                    speak(currentValue.toString());
+                    speak(currentValue);
                 }, hideSec * 1000);
             } else {
                 mainDisplay.classList.remove('hidden-val');
                 mainDisplay.innerText = currentValue;
-                speak(currentValue.toString());
+                speak(currentValue);
             }
 
             if (document.getElementById('autoCheck').checked) {
@@ -442,10 +477,24 @@
             }
         }
 
-        function speakCurrent() { speak(currentValue.toString()); }
+        function speakCurrent() { speak(currentValue); }
+
+        // --- SECTION QUIZ ---
 
         function startQuiz() {
+            currentMode = 'quiz';
             openScreen('screenQuiz');
+            nextQuizQuestion();
+        }
+
+        function setQuizCategory(cat) {
+            quizCategory = cat;
+            document.getElementById('btnQuizCatNumbers').classList.toggle('active', cat === 'numbers');
+            document.getElementById('btnQuizCatSyllables').classList.toggle('active', cat === 'syllables');
+            
+            document.getElementById('quizTypeGroup').style.display = cat === 'numbers' ? 'flex' : 'none';
+            document.getElementById('quizSylGroup').style.display = cat === 'syllables' ? 'flex' : 'none';
+            
             nextQuizQuestion();
         }
 
@@ -456,8 +505,14 @@
             nextQuizQuestion();
         }
 
+        function setQuizSylLevel(lvl) {
+            quizSylLevel = lvl;
+            document.getElementById('btnQuizSylN1').classList.toggle('active', lvl === 1);
+            document.getElementById('btnQuizSylN2').classList.toggle('active', lvl === 2);
+            nextQuizQuestion();
+        }
+
         function nextQuizQuestion() {
-            quizTarget = Math.floor(Math.random() * 100) + 1;
             const choicesContainer = document.getElementById('quizChoices');
             const bigDisplay = document.getElementById('quizBigDisplay');
             const listenBtn = document.getElementById('btnListenAgain');
@@ -465,15 +520,59 @@
 
             choicesContainer.innerHTML = '';
 
-            if (quizMode === 1) {
-                prompt.innerText = "Écoute et sélectionne le bon nombre :";
+            if (quizCategory === 'numbers') {
+                // Plage Nombres de 0 à 401
+                quizTarget = Math.floor(Math.random() * 402); // 0 à 401 inclus
+
+                if (quizMode === 1) {
+                    prompt.innerText = "Écoute et sélectionne le bon nombre :";
+                    bigDisplay.style.display = 'none';
+                    listenBtn.style.display = 'inline-block';
+
+                    let choices = [quizTarget];
+                    while (choices.length < 4) {
+                        let rand = Math.floor(Math.random() * 402);
+                        if (!choices.includes(rand)) choices.push(rand);
+                    }
+                    choices.sort(() => Math.random() - 0.5);
+
+                    choices.forEach(val => {
+                        const btn = document.createElement('button');
+                        btn.className = 'quiz-choice';
+                        btn.innerText = val;
+                        btn.onclick = () => checkQuizAnswer(val);
+                        choicesContainer.appendChild(btn);
+                    });
+
+                    speakCurrentQuiz();
+                } else {
+                    prompt.innerText = "Lis le nombre fort puis valide :";
+                    bigDisplay.style.display = 'block';
+                    bigDisplay.innerText = quizTarget;
+                    listenBtn.style.display = 'none';
+
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-action';
+                    btn.style.gridColumn = "span 2";
+                    btn.innerText = "J'ai répété ! ➔";
+                    btn.onclick = () => triggerReward();
+                    choicesContainer.appendChild(btn);
+
+                    speak(quizTarget.toString());
+                }
+            } else if (quizCategory === 'syllables') {
+                // Mode Quiz Syllabes (Niveau 1 ou 2)
+                const pool = quizSylLevel === 1 ? syllablesN1 : syllablesN2;
+                quizTarget = pool[Math.floor(Math.random() * pool.length)];
+
+                prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
                 bigDisplay.style.display = 'none';
                 listenBtn.style.display = 'inline-block';
 
                 let choices = [quizTarget];
                 while (choices.length < 4) {
-                    let rand = Math.floor(Math.random() * 100) + 1;
-                    if (!choices.includes(rand)) choices.push(rand);
+                    let randSyl = pool[Math.floor(Math.random() * pool.length)];
+                    if (!choices.includes(randSyl)) choices.push(randSyl);
                 }
                 choices.sort(() => Math.random() - 0.5);
 
@@ -486,24 +585,13 @@
                 });
 
                 speakCurrentQuiz();
-            } else {
-                prompt.innerText = "Lis le nombre fort puis valide :";
-                bigDisplay.style.display = 'block';
-                bigDisplay.innerText = quizTarget;
-                listenBtn.style.display = 'none';
-
-                const btn = document.createElement('button');
-                btn.className = 'btn-action';
-                btn.style.gridColumn = "span 2";
-                btn.innerText = "J'ai répété ! ➔";
-                btn.onclick = () => triggerReward();
-                choicesContainer.appendChild(btn);
-
-                speak(quizTarget.toString());
             }
         }
 
-        function speakCurrentQuiz() { speak(quizTarget.toString()); }
+        function speakCurrentQuiz() { 
+            const isSyl = (quizCategory === 'syllables');
+            speak(quizTarget, isSyl); 
+        }
 
         function checkQuizAnswer(val) {
             if (val === quizTarget) {
