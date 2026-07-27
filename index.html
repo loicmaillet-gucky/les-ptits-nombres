@@ -267,19 +267,13 @@
 
         <div style="margin-top: 20px;">
             <div class="setting-row">
-                <span>Style de voix (10 voix)</span>
+                <span>Style de voix</span>
                 <div class="setting-control">
                     <select id="voiceStyleSelect">
-                        <option value="cartoon" selected>🤪 Lutin Rigolo</option>
-                        <option value="robot">🤖 Robot Zinzin</option>
-                        <option value="souris">🐭 Souris Coquine</option>
-                        <option value="ogre">🧟 Ogre Grognon</option>
-                        <option value="alien">👽 Alien de l'Espace</option>
+                        <option value="canard" selected>🦆 Canard Enjoué</option>
                         <option value="hero">🚀 Super-Héros</option>
-                        <option value="sage">🧙‍♂️ Vieux Enchanteur</option>
-                        <option value="canard">🦆 Canard Enjoué</option>
+                        <option value="alien">👽 Alien de l'Espace</option>
                         <option value="speaker">📻 Présentateur TV</option>
-                        <option value="fantome">👻 Fantôme Farceur</option>
                     </select>
                 </div>
             </div>
@@ -326,7 +320,7 @@
             { icon: "🏆", word: "Excellent !" }
         ];
 
-        // Moteur audio avec 10 profils vocaux très marqués
+        // Uniquement les 4 voix sélectionnées
         function speak(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -336,45 +330,21 @@
                 const style = document.getElementById('voiceStyleSelect').value;
 
                 switch (style) {
-                    case 'cartoon': // Lutin Rigolo
-                        utterance.pitch = 1.7;
-                        utterance.rate = 1.25;
-                        break;
-                    case 'robot': // Robot Zinzin
-                        utterance.pitch = 0.3;
-                        utterance.rate = 0.7;
-                        break;
-                    case 'souris': // Souris Coquine
-                        utterance.pitch = 2.0;
-                        utterance.rate = 1.4;
-                        break;
-                    case 'ogre': // Ogre Grognon
-                        utterance.pitch = 0.1;
-                        utterance.rate = 0.6;
-                        break;
-                    case 'alien': // Alien de l'Espace
-                        utterance.pitch = 1.9;
-                        utterance.rate = 0.75;
+                    case 'canard': // Canard Enjoué
+                        utterance.pitch = 1.5;
+                        utterance.rate = 1.3;
                         break;
                     case 'hero': // Super-Héros
                         utterance.pitch = 0.8;
                         utterance.rate = 1.2;
                         break;
-                    case 'sage': // Vieux Enchanteur
-                        utterance.pitch = 0.5;
-                        utterance.rate = 0.7;
-                        break;
-                    case 'canard': // Canard Enjoué
-                        utterance.pitch = 1.5;
-                        utterance.rate = 1.3;
+                    case 'alien': // Alien de l'Espace
+                        utterance.pitch = 1.9;
+                        utterance.rate = 0.75;
                         break;
                     case 'speaker': // Présentateur TV
                         utterance.pitch = 1.1;
                         utterance.rate = 1.2;
-                        break;
-                    case 'fantome': // Fantôme Farceur
-                        utterance.pitch = 0.6;
-                        utterance.rate = 0.5;
                         break;
                     default:
                         utterance.pitch = 1.0;
