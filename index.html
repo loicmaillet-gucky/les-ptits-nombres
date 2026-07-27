@@ -195,7 +195,7 @@
 <body>
 
     <div id="rewardOverlay" class="reward-overlay">
-        <div id="rewardMsg" class="reward-msg">🎉 Bravo !</div>
+        <div id="rewardMsg" class="reward-msg"></div>
     </div>
 
     <div id="screenMenu" class="screen active">
@@ -334,10 +334,11 @@
         const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tro","tu","va","ve","vi","vo","vu"];
         const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
 
+        // Séparation stricte de l'émote visuelle et du mot parlé
         const rewards = [
-            { text: "🎉 Bravo !", spoken: "Bravo !" },
-            { text: "⭐ Super !", spoken: "Super !" },
-            { text: "🏆 Excellent !", spoken: "Excellent !" }
+            { icon: "🎉", word: "Bravo !" },
+            { icon: "⭐", word: "Super !" },
+            { icon: "🏆", word: "Excellent !" }
         ];
 
         function speak(text) {
@@ -526,9 +527,12 @@
             const msg = document.getElementById('rewardMsg');
             const rewardItem = rewards[Math.floor(Math.random() * rewards.length)];
             
-            msg.innerText = rewardItem.text;
+            // Affichage visuel (Émojis + Mot)
+            msg.innerHTML = `<span>${rewardItem.icon}</span> ${rewardItem.word}`;
             overlay.classList.add('show');
-            speak(rewardItem.spoken);
+            
+            // Prononciation stricte du mot seul
+            speak(rewardItem.word);
 
             setTimeout(() => {
                 overlay.classList.remove('show');
