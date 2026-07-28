@@ -36,6 +36,7 @@
         .mic-btn { background: #9B59B6; }
         .mic-btn.listening { background: #E74C3C; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 100%; max-width: 300px; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -52,14 +53,21 @@
         </div>
         <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
         
+        <!-- BLOC OPTIONS (RÉINTÉGRATION DE LA SÉLECTION DES VOIX) -->
         <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
+            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale :</label><br>
+            <select id="voiceSelect" onchange="changeVoice()">
+                <option value="">Chargement des voix...</option>
+            </select>
+            <button class="btn-action" style="font-size:12px; padding:4px 8px;" onclick="testSpeech()">🔊 Tester la voix</button>
+            <br><br>
             <label><input type="checkbox" id="autoCheck"> Défilement automatique</label><br><br>
             <label>Délai (sec) : <input type="number" id="autoDelay" value="4" min="1" style="width:50px;"></label>
             <input type="hidden" id="hideDelay" value="0">
         </div>
     </div>
 
-    <!-- ÉCRAN AFFICHAGE (Nombres / Lettres / Syllabes / Suites) -->
+    <!-- ÉCRAN AFFICHAGE -->
     <div id="screenDisplay" class="screen">
         <h2 id="displayTitle">---</h2>
         
@@ -151,6 +159,9 @@
     let quizTarget = '';
     let quizMode = 1;             
 
+    let selectedVoice = null;
+    let voicesList = [];
+
     const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
     const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
 
@@ -160,20 +171,77 @@
         { icon: "🏆", word: "Capitaine des Nombres !" }
     ];
 
-    // Relance du moteur audio Chrome
+    // Chargement et remplissage des voix dans le menu déroulant
+    function populateVoiceList() {
+        if (!('speechSynthesis' in window)) return;
+        
+        voicesList = window.speechSynthesis.getVoices();
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (!voiceSelect) return;
+
+        voiceSelect.innerHTML = '';
+
+        if (voicesList.length === 0) {
+            voiceSelect.innerHTML = '<option value="">Aucune voix détectée</option>';
+            return;
+        }
+
+        // Filtre prioritairement les voix françaises
+        let frVoices = voicesList.filter(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
+        let listToDisplay = frVoices.length > 0 ? frVoices : voicesList;
+
+        listToDisplay.forEach((voice, index) => {
+            const option = document.createElement('option');
+            option.value = voice.name;
+            option.textContent = `${voice.name} (${voice.lang})`;
+            if (frVoices.length > 0 && index === 0 && !selectedVoice) {
+                selectedVoice = voice;
+                option.selected = true;
+            } else if (selectedVoice && selectedVoice.name === voice.name) {
+                option.selected = true;
+            }
+            voiceSelect.appendChild(option);
+        });
+
+        if (!selectedVoice && listToDisplay.length > 0) {
+            selectedVoice = listToDisplay[0];
+        }
+    }
+
+    function changeVoice() {
+        const select = document.getElementById('voiceSelect');
+        const voiceName = select.value;
+        selectedVoice = voicesList.find(v => v.name === voiceName) || null;
+    }
+
+    function testSpeech() {
+        speak("Bonjour, voici un test de la voix sélectionnée.");
+    }
+
+    // Gestion du chargement asynchrone des voix Chrome
+    if ('speechSynthesis' in window) {
+        populateVoiceList();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+    }
+
+    // Déblocage obligatoire du moteur audio au premier clic utilisateur
     document.addEventListener('click', () => {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.resume();
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
         }
     }, { capture: true });
 
-    // Fonction vocale sécurisée
+    // Fonction d'élocution principale
     function speak(text, forceSyllables = false) {
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
 
         const synth = window.speechSynthesis;
-        synth.cancel();
+        synth.cancel(); // Vide la file d'attente pour éviter les blocages
         synth.resume();
 
         let textToSay = text.toString();
@@ -187,20 +255,14 @@
         utterance.lang = 'fr-FR';
         utterance.rate = 0.8;
 
-        const voices = synth.getVoices();
-        if (voices.length > 0) {
-            const frVoice = voices.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
-            if (frVoice) utterance.voice = frVoice;
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        } else if (voicesList.length > 0) {
+            const defaultFr = voicesList.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
+            if (defaultFr) utterance.voice = defaultFr;
         }
 
         synth.speak(utterance);
-    }
-
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-        }
     }
 
     function openScreen(screenId) {
