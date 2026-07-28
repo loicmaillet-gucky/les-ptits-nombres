@@ -56,7 +56,10 @@
         <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
             <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale :</label><br>
             <select id="voiceSelect" onchange="changeVoice()">
-                <option value="">Chargement des voix...</option>
+                <option value="duck">🦆 Canard Enjoué</option>
+                <option value="hero">🚀 Super-Héros</option>
+                <option value="alien">👽 Alien de l'Espace</option>
+                <option value="speaker">📻 Présentateur TV</option>
             </select>
             <button class="btn-action" style="font-size:12px; padding:4px 8px;" onclick="testSpeech()">🔊 Tester la voix</button>
             <br><br>
@@ -158,8 +161,8 @@
     let quizTarget = '';
     let quizMode = 1;             
 
-    let selectedVoice = null;
-    let voicesList = [];
+    let activeVoiceType = 'duck';
+    let systemVoices = [];
     let activeRecognition = null;
 
     const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
@@ -178,56 +181,26 @@
         }
     }
 
-    function populateVoiceList() {
-        if (!('speechSynthesis' in window)) return;
-        
-        voicesList = window.speechSynthesis.getVoices();
-        const voiceSelect = document.getElementById('voiceSelect');
-        if (!voiceSelect) return;
-
-        voiceSelect.innerHTML = '';
-
-        if (voicesList.length === 0) {
-            voiceSelect.innerHTML = '<option value="">Aucune voix détectée</option>';
-            return;
+    function initVoices() {
+        if ('speechSynthesis' in window) {
+            systemVoices = window.speechSynthesis.getVoices();
         }
+    }
 
-        let frVoices = voicesList.filter(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
-        let listToDisplay = frVoices.length > 0 ? frVoices : voicesList;
-
-        listToDisplay.forEach((voice, index) => {
-            const option = document.createElement('option');
-            option.value = voice.name;
-            option.textContent = `${voice.name} (${voice.lang})`;
-            if (frVoices.length > 0 && index === 0 && !selectedVoice) {
-                selectedVoice = voice;
-                option.selected = true;
-            } else if (selectedVoice && selectedVoice.name === voice.name) {
-                option.selected = true;
-            }
-            voiceSelect.appendChild(option);
-        });
-
-        if (!selectedVoice && listToDisplay.length > 0) {
-            selectedVoice = listToDisplay[0];
+    if ('speechSynthesis' in window) {
+        initVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = initVoices;
         }
     }
 
     function changeVoice() {
         const select = document.getElementById('voiceSelect');
-        const voiceName = select.value;
-        selectedVoice = voicesList.find(v => v.name === voiceName) || null;
+        activeVoiceType = select.value;
     }
 
     function testSpeech() {
         speak("Bonjour, voici un test de la voix sélectionnée.");
-    }
-
-    if ('speechSynthesis' in window) {
-        populateVoiceList();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
     }
 
     document.addEventListener('click', () => {
@@ -255,12 +228,35 @@
 
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
-        utterance.rate = 0.8;
 
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        } else if (voicesList.length > 0) {
-            const defaultFr = voicesList.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
+        // Profils audio pour chaque type de voix
+        let pitch = 1.0;
+        let rate = 0.8;
+
+        switch(activeVoiceType) {
+            case 'duck':
+                pitch = 1.8;
+                rate = 1.2;
+                break;
+            case 'hero':
+                pitch = 0.5;
+                rate = 0.7;
+                break;
+            case 'alien':
+                pitch = 0.2;
+                rate = 1.4;
+                break;
+            case 'speaker':
+                pitch = 1.0;
+                rate = 0.9;
+                break;
+        }
+
+        utterance.pitch = pitch;
+        utterance.rate = rate;
+
+        if (systemVoices.length > 0) {
+            const defaultFr = systemVoices.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
             if (defaultFr) utterance.voice = defaultFr;
         }
 
@@ -608,7 +604,7 @@
             prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
             bigDisplay.style.display = 'none';
             listenBtn.style.display = 'inline-flex';
-            micBtn.style.display = 'none'; // Désactivation du micro pour le quiz syllabes
+            micBtn.style.display = 'none';
 
             let choices = [quizTarget];
             while (choices.length < 4) {
