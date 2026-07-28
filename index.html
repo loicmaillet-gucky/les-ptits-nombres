@@ -240,7 +240,6 @@
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
 
-        // ÉTAPE CLÉ : On coupe la reconnaissance vocale avant de parler pour éviter le conflit audio
         stopRecognition();
 
         const synth = window.speechSynthesis;
@@ -514,6 +513,7 @@
         const bigDisplay = document.getElementById('quizBigDisplay');
         const seqDisplay = document.getElementById('quizSeqDisplay');
         const listenBtn = document.getElementById('btnListenAgain');
+        const micBtn = document.getElementById('btnMic');
         const prompt = document.getElementById('quizPrompt');
         document.getElementById('speechStatus').innerText = '';
 
@@ -522,6 +522,7 @@
 
         if (quizCategory === 'numbers') {
             quizTarget = Math.floor(Math.random() * 1002);
+            micBtn.style.display = 'inline-flex';
 
             if (quizMode === 1) {
                 prompt.innerText = "Écoute et choisis ou dicte le bon nombre :";
@@ -566,6 +567,7 @@
             prompt.innerText = "Quel est le nombre manquant dans la suite ?";
             bigDisplay.style.display = 'none';
             listenBtn.style.display = 'none';
+            micBtn.style.display = 'inline-flex';
             seqDisplay.style.display = 'flex';
             seqDisplay.innerHTML = '';
 
@@ -603,9 +605,10 @@
             const pool = quizSylLevel === 1 ? syllablesN1 : syllablesN2;
             quizTarget = pool[Math.floor(Math.random() * pool.length)];
 
-            prompt.innerText = "Écoute et sélectionne ou dicte la bonne syllabe :";
+            prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
             bigDisplay.style.display = 'none';
             listenBtn.style.display = 'inline-flex';
+            micBtn.style.display = 'none'; // Désactivation du micro pour le quiz syllabes
 
             let choices = [quizTarget];
             while (choices.length < 4) {
@@ -632,6 +635,8 @@
     }
 
     function startVoiceRecognition() {
+        if (quizCategory === 'syllables') return;
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
@@ -671,15 +676,9 @@
 
             let isCorrect = false;
 
-            if (quizCategory === 'syllables') {
-                if (spokenText === quizTarget.toString().toLowerCase() || spokenText.replace(/[^a-z]/g, '') === quizTarget.toString().toLowerCase()) {
-                    isCorrect = true;
-                }
-            } else {
-                const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
-                if (parsedNum === parseInt(quizTarget, 10) || spokenText.includes(quizTarget.toString())) {
-                    isCorrect = true;
-                }
+            const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
+            if (parsedNum === parseInt(quizTarget, 10) || spokenText.includes(quizTarget.toString())) {
+                isCorrect = true;
             }
 
             if (isCorrect) {
