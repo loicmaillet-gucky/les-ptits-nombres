@@ -230,24 +230,24 @@
         utterance.lang = 'fr-FR';
 
         let pitch = 1.0;
-        let rate = 0.8;
+        let rate = 0.4; // Vitesse réduite de 50% sur l'ensemble des voix
 
         switch(activeVoiceType) {
             case 'duck':
                 pitch = 1.8;
-                rate = 1.2;
+                rate = 0.6; // Réduit de 50% (1.2 -> 0.6)
                 break;
             case 'hero':
                 pitch = 0.5;
-                rate = 0.7;
+                rate = 0.35; // Réduit de 50% (0.7 -> 0.35)
                 break;
             case 'alien':
                 pitch = 0.2;
-                rate = 1.4;
+                rate = 0.7; // Réduit de 50% (1.4 -> 0.7)
                 break;
             case 'speaker':
                 pitch = 1.0;
-                rate = 0.9;
+                rate = 0.45; // Réduit de 50% (0.9 -> 0.45)
                 break;
         }
 
