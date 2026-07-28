@@ -122,8 +122,6 @@
             100% { transform: scale(1); }
         }
 
-        .main-display.hidden-val { opacity: 0; }
-
         .controls {
             display: flex; gap: 15px; justify-content: center; align-items: center; padding: 20px 0;
             flex-wrap: wrap;
@@ -276,20 +274,17 @@
             <div id="scoreDisplay" style="font-size: 20px; font-weight: bold; color: #f59e0b;">⭐ 0</div>
         </div>
 
-        <!-- Catégories de Quiz -->
         <div class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
             <button id="btnQuizCatNumbers" class="toggle-btn active" onclick="setQuizCategory('numbers')">123 Nombres</button>
             <button id="btnQuizCatSeq" class="toggle-btn" onclick="setQuizCategory('sequence')">🧩 Suites</button>
             <button id="btnQuizCatSyllables" class="toggle-btn" onclick="setQuizCategory('syllables')">📚 Syllabes</button>
         </div>
 
-        <!-- Sous-options Nombres -->
         <div id="quizTypeGroup" class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
             <button id="btnQuizMode1" class="toggle-btn active" onclick="setQuizMode(1)">Trouve la valeur</button>
             <button id="btnQuizMode2" class="toggle-btn" onclick="setQuizMode(2)">Répète après moi</button>
         </div>
 
-        <!-- Sous-options Syllabes -->
         <div id="quizSylGroup" class="toggle-group" style="display:none; margin: 5px auto; width: 100%; max-width: 500px;">
             <button id="btnQuizSylN1" class="toggle-btn active" onclick="setQuizSylLevel(1)">Syllabes N1</button>
             <button id="btnQuizSylN2" class="toggle-btn" onclick="setQuizSylLevel(2)">Syllabes N2</button>
@@ -368,7 +363,6 @@
         let isSeqRevealed = false;
         let autoTimer = null;
 
-        // Variables Quiz
         let quizScore = 0;
         let quizCategory = 'numbers'; 
         let quizSylLevel = 1;         
@@ -385,11 +379,13 @@
         ];
 
         function formatSpeechText(text, forceSyllables = false) {
+            if (!text && text !== 0) return '';
+            const strText = text.toString();
             if (currentMode === 'syllables' || forceSyllables) {
-                const letters = text.toString().toUpperCase().split('').join('... ');
-                return `${letters}... ${text}`;
+                const letters = strText.toUpperCase().split('').join('... ');
+                return `${letters}... ${strText}`;
             }
-            return text.toString();
+            return strText;
         }
 
         function speak(text, forceSyllables = false) {
@@ -397,26 +393,35 @@
                 window.speechSynthesis.cancel();
                 
                 const spokenText = formatSpeechText(text, forceSyllables);
+                if (!spokenText) return;
+
                 const utterance = new SpeechSynthesisUtterance(spokenText);
                 utterance.lang = 'fr-FR';
 
-                const style = document.getElementById('voiceStyleSelect').value;
+                const voices = window.speechSynthesis.getVoices();
+                const frVoice = voices.find(v => v.lang.startsWith('fr'));
+                if (frVoice) utterance.voice = frVoice;
 
+                const style = document.getElementById('voiceStyleSelect').value;
                 switch (style) {
                     case 'canard':
-                        utterance.pitch = 1.5; utterance.rate = 0.65; break;
+                        utterance.pitch = 1.4; utterance.rate = 0.8; break;
                     case 'hero':
-                        utterance.pitch = 0.8; utterance.rate = 0.6; break;
+                        utterance.pitch = 0.7; utterance.rate = 0.7; break;
                     case 'alien':
-                        utterance.pitch = 1.9; utterance.rate = 0.5; break;
+                        utterance.pitch = 1.8; utterance.rate = 0.6; break;
                     case 'speaker':
-                        utterance.pitch = 1.1; utterance.rate = 0.6; break;
+                        utterance.pitch = 1.0; utterance.rate = 0.8; break;
                     default:
-                        utterance.pitch = 1.0; utterance.rate = 0.6;
+                        utterance.pitch = 1.0; utterance.rate = 0.8;
                 }
 
                 window.speechSynthesis.speak(utterance);
             }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
         function openScreen(screenId) {
@@ -426,6 +431,7 @@
 
         function stopAutoAndBack() {
             clearTimeout(autoTimer);
+            window.speechSynthesis.cancel();
             openScreen('screenMenu');
         }
 
@@ -526,7 +532,7 @@
                 speak(currentValue);
             } else if (currentMode === 'sequence') {
                 isSeqRevealed = false;
-                const startNum = Math.floor(Math.random() * 996); // 0 à 1001 (996 + 5 = 1001)
+                const startNum = Math.floor(Math.random() * 996);
                 currentSeqTarget = startNum + 4;
                 
                 seqArea.innerHTML = '';
@@ -544,11 +550,8 @@
                     seqArea.appendChild(box);
                 }
 
-                // Auto-révélation si le mode automatique est activé
                 if (document.getElementById('autoCheck').checked) {
-                    setTimeout(() => {
-                        revealSeqTarget();
-                    }, 2500);
+                    setTimeout(() => { revealSeqTarget(); }, 2500);
                 }
 
             } else if (currentMode === 'letters') {
@@ -574,14 +577,14 @@
             if (currentMode === 'sequence') {
                 speak(currentSeqTarget.toString());
             } else {
-                speak(currentValue); 
+                speak(currentValue.toString()); 
             }
         }
 
         function startSeqVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
+                alert("La reconnaissance vocale n'est pas disponible.");
                 return;
             }
 
@@ -594,13 +597,10 @@
 
             recognition.onstart = () => {
                 micBtn.classList.add('listening');
-                statusDiv.innerText = "🎙️ J'écoute... Quel est le chiffre manquant ?";
+                statusDiv.innerText = "🎙️ J'écoute...";
             };
 
-            recognition.onend = () => {
-                micBtn.classList.remove('listening');
-            };
-
+            recognition.onend = () => { micBtn.classList.remove('listening'); };
             recognition.onerror = () => {
                 micBtn.classList.remove('listening');
                 statusDiv.innerText = "Pas entendu, retente !";
@@ -621,8 +621,6 @@
 
             recognition.start();
         }
-
-        // --- SECTION QUIZ ---
 
         function startQuiz() {
             currentMode = 'quiz';
@@ -775,13 +773,13 @@
 
         function speakCurrentQuiz() { 
             const isSyl = (quizCategory === 'syllables');
-            speak(quizTarget, isSyl); 
+            speak(quizTarget.toString(), isSyl); 
         }
 
         function startVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
+                alert("La reconnaissance vocale n'est pas disponible.");
                 return;
             }
 
@@ -794,13 +792,10 @@
 
             recognition.onstart = () => {
                 micBtn.classList.add('listening');
-                statusDiv.innerText = "🎙️ J'écoute... Parle maintenant !";
+                statusDiv.innerText = "🎙️ J'écoute...";
             };
 
-            recognition.onend = () => {
-                micBtn.classList.remove('listening');
-            };
-
+            recognition.onend = () => { micBtn.classList.remove('listening'); };
             recognition.onerror = () => {
                 micBtn.classList.remove('listening');
                 statusDiv.innerText = "Pas entendu, retente !";
@@ -813,7 +808,7 @@
                 let isCorrect = false;
 
                 if (quizCategory === 'syllables') {
-                    if (spokenText === quizTarget.toLowerCase() || spokenText.replace(/[^a-z]/g, '') === quizTarget.toLowerCase()) {
+                    if (spokenText === quizTarget.toString().toLowerCase() || spokenText.replace(/[^a-z]/g, '') === quizTarget.toString().toLowerCase()) {
                         isCorrect = true;
                     }
                 } else {
