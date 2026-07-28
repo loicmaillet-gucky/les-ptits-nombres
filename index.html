@@ -1,3 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu Éducatif - Nombres & Syllabes</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+        h1 { color: #333; margin-bottom: 25px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .btn { background: #4A90E2; color: white; border: none; padding: 15px 20px; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .btn:hover { background: #357ABD; }
+        .btn:active { transform: scale(0.98); }
+        .btn-action { background: #2ECC71; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; }
+        .btn-action:hover { background: #27AE60; }
+        .btn-back { background: #E74C3C; margin-top: 15px; }
+        .btn-back:hover { background: #C0392B; }
+        .btn-toggle { background: #e0e0e0; color: #333; padding: 10px; border-radius: 6px; border: none; cursor: pointer; margin: 0 5px; }
+        .btn-toggle.active { background: #4A90E2; color: white; }
+        .display-box { font-size: 72px; font-weight: bold; color: #2C3E50; margin: 30px 0; min-height: 100px; display: flex; align-items: center; justify-content: center; }
+        .seq-area { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .seq-box { width: 60px; height: 60px; background: #eef2f5; border: 2px solid #bdc3c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        .seq-box.missing { border-color: #E67E22; background: #FDEDEC; color: #E67E22; }
+        .quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .quiz-choice { background: #f8f9fa; border: 2px solid #e9ecef; font-size: 24px; font-weight: bold; padding: 20px; border-radius: 10px; cursor: pointer; }
+        .quiz-choice:hover { border-color: #4A90E2; background: #eef6ff; }
+        .reward-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; }
+        .reward-overlay.show { display: flex; }
+        .reward-card { background: white; padding: 40px; border-radius: 20px; text-align: center; font-size: 32px; font-weight: bold; }
+        .reward-card span { font-size: 64px; display: block; margin-bottom: 10px; }
+        .toggle-group { display: flex; justify-content: center; margin: 15px 0; }
+        .mic-btn { background: #9B59B6; }
+        .mic-btn.listening { background: #E74C3C; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- ÉCRAN MENU -->
+    <div id="screenMenu" class="screen active">
+        <h1>Apprentissage & Jeux</h1>
+        <div class="btn-grid">
+            <button class="btn" onclick="startNumbers(0, 1001)">Nombres (0-1000)</button>
+            <button class="btn" onclick="startSequence()">Suite de Nombres</button>
+            <button class="btn" onclick="startLetters()">Lettres</button>
+            <button class="btn" onclick="startSyllables()">Syllabes</button>
+        </div>
+        <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
+        
+        <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
+            <label><input type="checkbox" id="autoCheck"> Défilement automatique</label><br><br>
+            <label>Délai (sec) : <input type="number" id="autoDelay" value="4" min="1" style="width:50px;"></label>
+            <input type="hidden" id="hideDelay" value="0">
+        </div>
+    </div>
+
+    <!-- ÉCRAN AFFICHAGE (Nombres / Lettres / Syllabes / Suites) -->
+    <div id="screenDisplay" class="screen">
+        <h2 id="displayTitle">---</h2>
+        
+        <div id="lettersToggle" class="toggle-group" style="display:none;">
+            <button id="btnMAJ" class="btn-toggle active" onclick="setCase(true)">MAJUSCULES</button>
+            <button id="btnMIN" class="btn-toggle" onclick="setCase(false)">minuscules</button>
+        </div>
+
+        <div id="syllablesToggle" class="toggle-group" style="display:none;">
+            <button id="btnSylN1" class="btn-toggle active" onclick="setSyllablesLevel(1)">Niveau 1 (Simple)</button>
+            <button id="btnSylN2" class="btn-toggle" onclick="setSyllablesLevel(2)">Niveau 2 (Complexe)</button>
+        </div>
+
+        <div id="mainText" class="display-box">--</div>
+        <div id="sequenceArea" class="seq-area" style="display:none;"></div>
+
+        <div>
+            <button class="btn-action" onclick="speakCurrent()">🔊 Écouter</button>
+            <button class="btn-action" onclick="nextItem()">Suivant ➔</button>
+            <button id="btnSeqMic" class="btn-action mic-btn" style="display:none;" onclick="startSeqVoiceRecognition()">🎙️ Dicter</button>
+        </div>
+        <div id="displaySpeechStatus" style="margin-top:10px; font-weight:bold; color:#7F8C8D;"></div>
+
+        <button class="btn btn-back" onclick="stopAutoAndBack()">🏠 Retour au Menu</button>
+    </div>
+
+    <!-- ÉCRAN QUIZ -->
+    <div id="screenQuiz" class="screen">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Exercices</h2>
+            <div id="scoreDisplay" style="font-size:20px; font-weight:bold; color:#F39C12;">⭐ 0</div>
+        </div>
+
+        <div class="toggle-group">
+            <button id="btnQuizCatNumbers" class="btn-toggle active" onclick="setQuizCategory('numbers')">Nombres</button>
+            <button id="btnQuizCatSeq" class="btn-toggle" onclick="setQuizCategory('sequence')">Suites</button>
+            <button id="btnQuizCatSyllables" class="btn-toggle" onclick="setQuizCategory('syllables')">Syllabes</button>
+        </div>
+
+        <div id="quizTypeGroup" class="toggle-group">
+            <button id="btnQuizMode1" class="btn-toggle active" onclick="setQuizMode(1)">Écoute ➔ Choisis</button>
+            <button id="btnQuizMode2" class="btn-toggle" onclick="setQuizMode(2)">Lis ➔ Répète</button>
+        </div>
+
+        <div id="quizSylGroup" class="toggle-group" style="display:none;">
+            <button id="btnQuizSylN1" class="btn-toggle active" onclick="setQuizSylLevel(1)">Niveau 1</button>
+            <button id="btnQuizSylN2" class="btn-toggle" onclick="setQuizSylLevel(2)">Niveau 2</button>
+        </div>
+
+        <p id="quizPrompt" style="font-size:18px; font-weight:bold; margin-top:15px;">Écoute et choisis le bon nombre :</p>
+        
+        <div id="quizBigDisplay" class="display-box" style="display:none;">--</div>
+        <div id="quizSeqDisplay" class="seq-area" style="display:none;"></div>
+
+        <div>
+            <button id="btnListenAgain" class="btn-action" onclick="speakCurrentQuiz()">🔊 Réécouter</button>
+            <button id="btnMic" class="btn-action mic-btn" onclick="startVoiceRecognition()">🎙️ Dicter la réponse</button>
+        </div>
+        <div id="speechStatus" style="margin-top:10px; font-weight:bold; color:#7F8C8D;"></div>
+
+        <div id="quizChoices" class="quiz-choices"></div>
+
+        <button class="btn btn-back" onclick="openScreen('screenMenu')">🏠 Quitter le Quiz</button>
+    </div>
+</div>
+
+<!-- OVERLAY DE RÉCOMPENSE -->
+<div id="rewardOverlay" class="reward-overlay">
+    <div class="reward-card">
+        <div id="rewardMsg"><span>🎉</span> Bravo !</div>
+    </div>
+</div>
+
 <script>
     let currentMode = '';
     let currentMinNumber = 0;
@@ -25,25 +160,24 @@
         { icon: "🏆", word: "Capitaine des Nombres !" }
     ];
 
-    // Déblocage du moteur audio de Chrome sur n'importe quel clic
+    // Relance du moteur audio Chrome
     document.addEventListener('click', () => {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.resume();
         }
     }, { capture: true });
 
-    // FONCTION VOCALE CORRIGÉE ET SÉCURISÉE
+    // Fonction vocale sécurisée
     function speak(text, forceSyllables = false) {
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
 
         const synth = window.speechSynthesis;
-        synth.cancel(); // Annule tout son en cours
+        synth.cancel();
         synth.resume();
 
         let textToSay = text.toString();
 
-        // Formatage spécifique pour détacher les lettres des syllabes si besoin
         if (forceSyllables || currentMode === 'syllables') {
             const spelled = textToSay.toUpperCase().split('').join('... ');
             textToSay = `${spelled}... ${textToSay}`;
@@ -53,7 +187,6 @@
         utterance.lang = 'fr-FR';
         utterance.rate = 0.8;
 
-        // Force la recherche d'une voix française
         const voices = synth.getVoices();
         if (voices.length > 0) {
             const frVoice = voices.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
@@ -63,7 +196,6 @@
         synth.speak(utterance);
     }
 
-    // Préchargement des voix dans Chrome
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -507,3 +639,5 @@
         }, 1800);
     }
 </script>
+</body>
+</html>
