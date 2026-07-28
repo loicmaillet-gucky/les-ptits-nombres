@@ -53,7 +53,6 @@
         </div>
         <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
         
-        <!-- BLOC OPTIONS (RÉINTÉGRATION DE LA SÉLECTION DES VOIX) -->
         <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
             <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale :</label><br>
             <select id="voiceSelect" onchange="changeVoice()">
@@ -161,6 +160,7 @@
 
     let selectedVoice = null;
     let voicesList = [];
+    let activeRecognition = null;
 
     const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
     const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
@@ -171,7 +171,13 @@
         { icon: "🏆", word: "Capitaine des Nombres !" }
     ];
 
-    // Chargement et remplissage des voix dans le menu déroulant
+    function stopRecognition() {
+        if (activeRecognition) {
+            try { activeRecognition.stop(); } catch(e) {}
+            activeRecognition = null;
+        }
+    }
+
     function populateVoiceList() {
         if (!('speechSynthesis' in window)) return;
         
@@ -186,7 +192,6 @@
             return;
         }
 
-        // Filtre prioritairement les voix françaises
         let frVoices = voicesList.filter(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
         let listToDisplay = frVoices.length > 0 ? frVoices : voicesList;
 
@@ -218,7 +223,6 @@
         speak("Bonjour, voici un test de la voix sélectionnée.");
     }
 
-    // Gestion du chargement asynchrone des voix Chrome
     if ('speechSynthesis' in window) {
         populateVoiceList();
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -226,22 +230,21 @@
         }
     }
 
-    // Déblocage obligatoire du moteur audio au premier clic utilisateur
     document.addEventListener('click', () => {
         if ('speechSynthesis' in window) {
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-            }
+            window.speechSynthesis.resume();
         }
     }, { capture: true });
 
-    // Fonction d'élocution principale
     function speak(text, forceSyllables = false) {
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
 
+        // ÉTAPE CLÉ : On coupe la reconnaissance vocale avant de parler pour éviter le conflit audio
+        stopRecognition();
+
         const synth = window.speechSynthesis;
-        synth.cancel(); // Vide la file d'attente pour éviter les blocages
+        synth.cancel();
         synth.resume();
 
         let textToSay = text.toString();
@@ -266,12 +269,14 @@
     }
 
     function openScreen(screenId) {
+        stopRecognition();
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
     }
 
     function stopAutoAndBack() {
         clearTimeout(autoTimer);
+        stopRecognition();
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         openScreen('screenMenu');
     }
@@ -429,10 +434,14 @@
             return;
         }
 
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        stopRecognition();
+
         const micBtn = document.getElementById('btnSeqMic');
         const statusDiv = document.getElementById('displaySpeechStatus');
         
         const recognition = new SpeechRecognition();
+        activeRecognition = recognition;
         recognition.lang = 'fr-FR';
         recognition.continuous = false;
 
@@ -441,10 +450,15 @@
             statusDiv.innerText = "🎙️ J'écoute...";
         };
 
-        recognition.onend = () => { micBtn.classList.remove('listening'); };
+        recognition.onend = () => { 
+            micBtn.classList.remove('listening'); 
+            activeRecognition = null;
+        };
+
         recognition.onerror = () => {
             micBtn.classList.remove('listening');
             statusDiv.innerText = "Pas entendu, retente !";
+            activeRecognition = null;
         };
 
         recognition.onresult = (event) => {
@@ -624,10 +638,14 @@
             return;
         }
 
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        stopRecognition();
+
         const micBtn = document.getElementById('btnMic');
         const statusDiv = document.getElementById('speechStatus');
         
         const recognition = new SpeechRecognition();
+        activeRecognition = recognition;
         recognition.lang = 'fr-FR';
         recognition.continuous = false;
 
@@ -636,10 +654,15 @@
             statusDiv.innerText = "🎙️ J'écoute...";
         };
 
-        recognition.onend = () => { micBtn.classList.remove('listening'); };
+        recognition.onend = () => { 
+            micBtn.classList.remove('listening'); 
+            activeRecognition = null;
+        };
+
         recognition.onerror = () => {
             micBtn.classList.remove('listening');
             statusDiv.innerText = "Pas entendu, retente !";
+            activeRecognition = null;
         };
 
         recognition.onresult = (event) => {
