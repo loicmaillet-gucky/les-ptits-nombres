@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu Éducatif - Nombres & Syllabes (Test Son)</title>
+    <title>Jeu Éducatif - Nombres & Syllabes</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -33,6 +33,9 @@
         .reward-card { background: white; padding: 40px; border-radius: 20px; text-align: center; font-size: 32px; font-weight: bold; }
         .reward-card span { font-size: 64px; display: block; margin-bottom: 10px; }
         .toggle-group { display: flex; justify-content: center; margin: 15px 0; }
+        .mic-btn { background: #9B59B6; }
+        .mic-btn.listening { background: #E74C3C; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 100%; max-width: 300px; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
@@ -83,7 +86,9 @@
         <div>
             <button class="btn-action" onclick="speakCurrent()">🔊 Écouter</button>
             <button class="btn-action" onclick="nextItem()">Suivant ➔</button>
+            <button id="btnSeqMic" class="btn-action mic-btn" style="display:none;" onclick="startSeqVoiceRecognition()">🎙️ Dicter</button>
         </div>
+        <div id="displaySpeechStatus" style="margin-top:10px; font-weight:bold; color:#7F8C8D;"></div>
 
         <button class="btn btn-back" onclick="stopAutoAndBack()">🏠 Retour au Menu</button>
     </div>
@@ -118,7 +123,9 @@
 
         <div>
             <button id="btnListenAgain" class="btn-action" onclick="speakCurrentQuiz()">🔊 Réécouter</button>
+            <button id="btnMic" class="btn-action mic-btn" onclick="startVoiceRecognition()">🎙️ Dicter la réponse</button>
         </div>
+        <div id="speechStatus" style="margin-top:10px; font-weight:bold; color:#7F8C8D;"></div>
 
         <div id="quizChoices" class="quiz-choices"></div>
 
@@ -153,6 +160,7 @@
 
     let selectedVoice = null;
     let voicesList = [];
+    let activeRecognition = null;
 
     const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
     const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
@@ -162,6 +170,13 @@
         { icon: "⭐", word: "Super !" },
         { icon: "🏆", word: "Capitaine des Nombres !" }
     ];
+
+    function stopRecognition() {
+        if (activeRecognition) {
+            try { activeRecognition.stop(); } catch(e) {}
+            activeRecognition = null;
+        }
+    }
 
     function populateVoiceList() {
         if (!('speechSynthesis' in window)) return;
@@ -225,6 +240,9 @@
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
 
+        // ÉTAPE CLÉ : On coupe la reconnaissance vocale avant de parler pour éviter le conflit audio
+        stopRecognition();
+
         const synth = window.speechSynthesis;
         synth.cancel();
         synth.resume();
@@ -251,12 +269,14 @@
     }
 
     function openScreen(screenId) {
+        stopRecognition();
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
     }
 
     function stopAutoAndBack() {
         clearTimeout(autoTimer);
+        stopRecognition();
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         openScreen('screenMenu');
     }
@@ -269,6 +289,8 @@
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'none';
+        document.getElementById('btnSeqMic').style.display = 'none';
+        document.getElementById('displaySpeechStatus').innerText = '';
         document.getElementById('mainText').style.display = 'block';
         openScreen('screenDisplay');
         nextItem();
@@ -281,6 +303,8 @@
         document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('mainText').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'flex';
+        document.getElementById('btnSeqMic').style.display = 'inline-flex';
+        document.getElementById('displaySpeechStatus').innerText = '';
         openScreen('screenDisplay');
         nextItem();
     }
@@ -291,6 +315,8 @@
         document.getElementById('lettersToggle').style.display = 'flex';
         document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'none';
+        document.getElementById('btnSeqMic').style.display = 'none';
+        document.getElementById('displaySpeechStatus').innerText = '';
         document.getElementById('mainText').style.display = 'block';
         openScreen('screenDisplay');
         nextItem();
@@ -314,6 +340,8 @@
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'flex';
         document.getElementById('sequenceArea').style.display = 'none';
+        document.getElementById('btnSeqMic').style.display = 'none';
+        document.getElementById('displaySpeechStatus').innerText = '';
         document.getElementById('mainText').style.display = 'block';
         openScreen('screenDisplay');
         nextItem();
@@ -340,6 +368,8 @@
         clearTimeout(autoTimer);
         const mainDisplay = document.getElementById('mainText');
         const seqArea = document.getElementById('sequenceArea');
+        const statusDiv = document.getElementById('displaySpeechStatus');
+        statusDiv.innerText = '';
         const hideSec = parseInt(document.getElementById('hideDelay').value) || 0;
 
         if (currentMode === 'numbers') {
@@ -397,6 +427,56 @@
         }
     }
 
+    function startSeqVoiceRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
+            return;
+        }
+
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        stopRecognition();
+
+        const micBtn = document.getElementById('btnSeqMic');
+        const statusDiv = document.getElementById('displaySpeechStatus');
+        
+        const recognition = new SpeechRecognition();
+        activeRecognition = recognition;
+        recognition.lang = 'fr-FR';
+        recognition.continuous = false;
+
+        recognition.onstart = () => {
+            micBtn.classList.add('listening');
+            statusDiv.innerText = "🎙️ J'écoute...";
+        };
+
+        recognition.onend = () => { 
+            micBtn.classList.remove('listening'); 
+            activeRecognition = null;
+        };
+
+        recognition.onerror = () => {
+            micBtn.classList.remove('listening');
+            statusDiv.innerText = "Pas entendu, retente !";
+            activeRecognition = null;
+        };
+
+        recognition.onresult = (event) => {
+            const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+            statusDiv.innerText = `Tu as dit : "${spokenText}"`;
+
+            const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
+            if (parsedNum === parseInt(currentSeqTarget, 10) || spokenText.includes(currentSeqTarget.toString())) {
+                revealSeqTarget();
+                triggerReward();
+            } else {
+                speak("Ce n'est pas le bon nombre, essaye encore !");
+            }
+        };
+
+        recognition.start();
+    }
+
     function startQuiz() {
         currentMode = 'quiz';
         openScreen('screenQuiz');
@@ -435,6 +515,7 @@
         const seqDisplay = document.getElementById('quizSeqDisplay');
         const listenBtn = document.getElementById('btnListenAgain');
         const prompt = document.getElementById('quizPrompt');
+        document.getElementById('speechStatus').innerText = '';
 
         choicesContainer.innerHTML = '';
         seqDisplay.style.display = 'none';
@@ -443,7 +524,7 @@
             quizTarget = Math.floor(Math.random() * 1002);
 
             if (quizMode === 1) {
-                prompt.innerText = "Écoute et choisis le bon nombre :";
+                prompt.innerText = "Écoute et choisis ou dicte le bon nombre :";
                 bigDisplay.style.display = 'none';
                 listenBtn.style.display = 'inline-flex';
 
@@ -464,7 +545,7 @@
 
                 speakCurrentQuiz();
             } else {
-                prompt.innerText = "Lis le nombre fort :";
+                prompt.innerText = "Lis le nombre fort ou dicte-le :";
                 bigDisplay.style.display = 'block';
                 bigDisplay.innerText = quizTarget;
                 listenBtn.style.display = 'none';
@@ -522,7 +603,7 @@
             const pool = quizSylLevel === 1 ? syllablesN1 : syllablesN2;
             quizTarget = pool[Math.floor(Math.random() * pool.length)];
 
-            prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
+            prompt.innerText = "Écoute et sélectionne ou dicte la bonne syllabe :";
             bigDisplay.style.display = 'none';
             listenBtn.style.display = 'inline-flex';
 
@@ -548,6 +629,69 @@
     function speakCurrentQuiz() { 
         const isSyl = (quizCategory === 'syllables');
         speak(quizTarget.toString(), isSyl); 
+    }
+
+    function startVoiceRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
+            return;
+        }
+
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        stopRecognition();
+
+        const micBtn = document.getElementById('btnMic');
+        const statusDiv = document.getElementById('speechStatus');
+        
+        const recognition = new SpeechRecognition();
+        activeRecognition = recognition;
+        recognition.lang = 'fr-FR';
+        recognition.continuous = false;
+
+        recognition.onstart = () => {
+            micBtn.classList.add('listening');
+            statusDiv.innerText = "🎙️ J'écoute...";
+        };
+
+        recognition.onend = () => { 
+            micBtn.classList.remove('listening'); 
+            activeRecognition = null;
+        };
+
+        recognition.onerror = () => {
+            micBtn.classList.remove('listening');
+            statusDiv.innerText = "Pas entendu, retente !";
+            activeRecognition = null;
+        };
+
+        recognition.onresult = (event) => {
+            const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+            statusDiv.innerText = `Tu as dit : "${spokenText}"`;
+
+            let isCorrect = false;
+
+            if (quizCategory === 'syllables') {
+                if (spokenText === quizTarget.toString().toLowerCase() || spokenText.replace(/[^a-z]/g, '') === quizTarget.toString().toLowerCase()) {
+                    isCorrect = true;
+                }
+            } else {
+                const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
+                if (parsedNum === parseInt(quizTarget, 10) || spokenText.includes(quizTarget.toString())) {
+                    isCorrect = true;
+                }
+            }
+
+            if (isCorrect) {
+                quizScore += 1;
+                document.getElementById('scoreDisplay').innerText = `⭐ ${quizScore}`;
+                triggerReward();
+            } else {
+                speak("Raté, essaye encore !");
+            }
+        };
+
+        recognition.start();
     }
 
     function checkQuizAnswer(val) {
