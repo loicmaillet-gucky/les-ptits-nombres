@@ -362,6 +362,7 @@
         let currentSeqTarget = 0;
         let isSeqRevealed = false;
         let autoTimer = null;
+        let voiceUnlocked = false;
 
         let quizScore = 0;
         let quizCategory = 'numbers'; 
@@ -378,8 +379,20 @@
             { icon: "🏆", word: "Capitaine des Nombres !" }
         ];
 
+        // Déverrouillage de l'API Audio / SpeechSynthesis au premier clic utilisateur (contournement Safari/macOS/iOS)
+        function unlockVoice() {
+            if (!voiceUnlocked && 'speechSynthesis' in window) {
+                const emptyUtterance = new SpeechSynthesisUtterance('');
+                emptyUtterance.volume = 0;
+                window.speechSynthesis.speak(emptyUtterance);
+                voiceUnlocked = true;
+            }
+        }
+        document.addEventListener('click', unlockVoice, { once: true });
+        document.addEventListener('touchstart', unlockVoice, { once: true });
+
         function formatSpeechText(text, forceSyllables = false) {
-            if (!text && text !== 0) return '';
+            if (text === undefined || text === null || text === '') return '';
             const strText = text.toString();
             if (currentMode === 'syllables' || forceSyllables) {
                 const letters = strText.toUpperCase().split('').join('... ');
@@ -389,17 +402,21 @@
         }
 
         function speak(text, forceSyllables = false) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                
-                const spokenText = formatSpeechText(text, forceSyllables);
-                if (!spokenText) return;
+            if (!('speechSynthesis' in window)) return;
 
+            window.speechSynthesis.cancel();
+
+            const spokenText = formatSpeechText(text, forceSyllables);
+            if (!spokenText) return;
+
+            // Utilisation d'un léger délai pour laisser à speechSynthesis.cancel() le temps de purger sur Safari
+            setTimeout(() => {
                 const utterance = new SpeechSynthesisUtterance(spokenText);
                 utterance.lang = 'fr-FR';
 
                 const voices = window.speechSynthesis.getVoices();
-                const frVoice = voices.find(v => v.lang.startsWith('fr'));
+                // Sélection prioritaire d'une voix FR native
+                const frVoice = voices.find(v => v.lang.startsWith('fr') || v.lang.includes('FR'));
                 if (frVoice) utterance.voice = frVoice;
 
                 const style = document.getElementById('voiceStyleSelect').value;
@@ -417,11 +434,15 @@
                 }
 
                 window.speechSynthesis.speak(utterance);
-            }
+            }, 50);
         }
 
+        // Chargement explicite des voix système
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+            window.speechSynthesis.getVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+            }
         }
 
         function openScreen(screenId) {
@@ -431,7 +452,7 @@
 
         function stopAutoAndBack() {
             clearTimeout(autoTimer);
-            window.speechSynthesis.cancel();
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             openScreen('screenMenu');
         }
 
@@ -584,7 +605,7 @@
         function startSeqVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert("La reconnaissance vocale n'est pas disponible.");
+                alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
                 return;
             }
 
@@ -779,7 +800,7 @@
         function startVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert("La reconnaissance vocale n'est pas disponible.");
+                alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
                 return;
             }
 
