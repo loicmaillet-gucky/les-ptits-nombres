@@ -2,676 +2,454 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Les P'tits Nombres & Lettres</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu Éducatif - Nombres & Syllabes (Test Son)</title>
     <style>
-        :root {
-            --bg-primary: #121826;
-            --bg-card: #1f293d;
-            --accent-green: #10b981;
-            --accent-yellow: #f59e0b;
-            --accent-red: #ef4444;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
-            --text-main: #ffffff;
-            --text-sub: #9ca3af;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0; padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-main);
-            height: 100vh; width: 100vw;
-            overflow: hidden;
-            display: flex; flex-direction: column;
-        }
-
-        .screen {
-            display: none; flex-direction: column;
-            height: 100%; width: 100%; padding: 20px;
-            position: absolute; top: 0; left: 0;
-        }
-
-        .screen.active { display: flex; }
-
-        .app-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding-bottom: 10px;
-        }
-
-        .app-title {
-            font-size: 24px; font-weight: 800;
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-
-        .btn-icon {
-            background: var(--bg-card); border: none; color: white;
-            font-size: 24px; width: 50px; height: 50px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        .menu-grid {
-            display: grid; grid-template-columns: 1fr;
-            gap: 15px; flex: 1; margin-top: 15px; overflow-y: auto;
-        }
-
-        @media (min-width: 600px) {
-            .menu-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        .menu-btn {
-            background: var(--bg-card); border: 3px solid transparent;
-            border-radius: 20px; padding: 20px;
-            display: flex; align-items: center; gap: 15px;
-            color: white; font-size: 22px; font-weight: bold;
-            cursor: pointer; transition: transform 0.1s;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-        }
-
-        .menu-btn:active { transform: scale(0.98); }
-        .menu-btn.green { border-color: var(--accent-green); }
-        .menu-btn.yellow { border-color: var(--accent-yellow); }
-        .menu-btn.red { border-color: var(--accent-red); }
-        .menu-btn.blue { border-color: var(--accent-blue); }
-        .menu-btn.purple { border-color: var(--accent-purple); }
-
-        .menu-btn .badge {
-            width: 45px; height: 45px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; font-size: 24px;
-        }
-
-        .display-area {
-            flex: 1; display: flex;
-            flex-direction: column; justify-content: center; align-items: center;
-        }
-
-        .main-display {
-            font-size: clamp(60px, 20vw, 180px);
-            font-weight: 900; text-align: center; transition: opacity 0.3s;
-        }
-
-        .sequence-display {
-            display: flex; flex-wrap: wrap; justify-content: center;
-            align-items: center; gap: 10px; width: 100%; max-width: 600px;
-        }
-
-        .seq-box {
-            background: var(--bg-card); border: 2px solid #374151;
-            border-radius: 15px; padding: 12px 18px; font-size: 30px;
-            font-weight: bold; color: white; min-width: 65px; text-align: center;
-        }
-
-        .seq-box.missing {
-            border-color: var(--accent-yellow); color: var(--accent-yellow);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .main-display.hidden-val { opacity: 0; }
-
-        .controls {
-            display: flex; gap: 15px; justify-content: center; align-items: center; padding: 20px 0;
-        }
-
-        .btn-action {
-            background: var(--accent-blue); color: white; border: none;
-            padding: 16px 36px; border-radius: 50px;
-            font-size: 22px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
-            display: inline-flex; align-items: center; gap: 10px;
-        }
-
-        .btn-action:active { transform: scale(0.95); }
-
-        .btn-mic {
-            background: var(--accent-red);
-            box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4);
-        }
-
-        .btn-mic.listening {
-            background: var(--accent-yellow);
-            animation: pulse 1s infinite;
-        }
-
-        .toggle-group {
-            display: flex; background: var(--bg-card);
-            border-radius: 15px; padding: 5px; margin-bottom: 10px;
-        }
-
-        .toggle-btn {
-            flex: 1; padding: 10px 15px; border: none; background: transparent;
-            color: var(--text-sub); font-size: 15px; font-weight: bold;
-            border-radius: 10px; cursor: pointer;
-        }
-
-        .toggle-btn.active { background: var(--accent-blue); color: white; }
-
-        .quiz-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 15px; width: 100%; max-width: 500px; margin-top: 15px;
-        }
-
-        .quiz-choice {
-            background: var(--bg-card); border: 2px solid #374151;
-            border-radius: 20px; padding: 20px;
-            font-size: 36px; font-weight: bold; color: white;
-            cursor: pointer; text-align: center;
-        }
-
-        .reward-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(18, 24, 38, 0.95);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-
-        .reward-overlay.show { opacity: 1; pointer-events: auto; }
-
-        .reward-msg {
-            font-size: 48px; font-weight: 900; color: #f59e0b; text-align: center;
-            animation: bounce 0.6s infinite alternate;
-        }
-
-        @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-20px); }
-        }
-
-        .setting-row {
-            background: var(--bg-card); padding: 18px; border-radius: 15px;
-            margin-bottom: 15px; display: flex; justify-content: space-between;
-            align-items: center; font-size: 18px;
-        }
-
-        select {
-            background: #121826; color: white; border: 1px solid #374151;
-            padding: 10px 14px; border-radius: 10px; font-size: 16px; width: 220px;
-        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+        h1 { color: #333; margin-bottom: 25px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .btn { background: #4A90E2; color: white; border: none; padding: 15px 20px; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .btn:hover { background: #357ABD; }
+        .btn:active { transform: scale(0.98); }
+        .btn-action { background: #2ECC71; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; }
+        .btn-action:hover { background: #27AE60; }
+        .btn-back { background: #E74C3C; margin-top: 15px; }
+        .btn-back:hover { background: #C0392B; }
+        .btn-toggle { background: #e0e0e0; color: #333; padding: 10px; border-radius: 6px; border: none; cursor: pointer; margin: 0 5px; }
+        .btn-toggle.active { background: #4A90E2; color: white; }
+        .display-box { font-size: 72px; font-weight: bold; color: #2C3E50; margin: 30px 0; min-height: 100px; display: flex; align-items: center; justify-content: center; }
+        .seq-area { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .seq-box { width: 60px; height: 60px; background: #eef2f5; border: 2px solid #bdc3c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        .seq-box.missing { border-color: #E67E22; background: #FDEDEC; color: #E67E22; }
+        .quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .quiz-choice { background: #f8f9fa; border: 2px solid #e9ecef; font-size: 24px; font-weight: bold; padding: 20px; border-radius: 10px; cursor: pointer; }
+        .quiz-choice:hover { border-color: #4A90E2; background: #eef6ff; }
+        .reward-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; }
+        .reward-overlay.show { display: flex; }
+        .reward-card { background: white; padding: 40px; border-radius: 20px; text-align: center; font-size: 32px; font-weight: bold; }
+        .reward-card span { font-size: 64px; display: block; margin-bottom: 10px; }
+        .toggle-group { display: flex; justify-content: center; margin: 15px 0; }
+        select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 100%; max-width: 300px; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="rewardOverlay" class="reward-overlay">
-        <div id="rewardMsg" class="reward-msg"></div>
-    </div>
-
+<div class="container">
+    <!-- ÉCRAN MENU -->
     <div id="screenMenu" class="screen active">
-        <div class="app-header">
-            <div class="app-title">LES P'TITS NOMBRES</div>
-            <button class="btn-icon" onclick="openScreen('screenSettings')">⚙️</button>
+        <h1>Apprentissage & Jeux</h1>
+        <div class="btn-grid">
+            <button class="btn" onclick="startNumbers(0, 1001)">Nombres (0-1000)</button>
+            <button class="btn" onclick="startSequence()">Suite de Nombres</button>
+            <button class="btn" onclick="startLetters()">Lettres</button>
+            <button class="btn" onclick="startSyllables()">Syllabes</button>
         </div>
-        <div class="menu-grid">
-            <button class="menu-btn green" onclick="startNumbers(1, 100)">
-                <div class="badge" style="background:#064e3b; color:#34d399;">🟢</div>
-                Niveau 1 (1-100)
-            </button>
-            <button class="menu-btn yellow" onclick="startNumbers(99, 201)">
-                <div class="badge" style="background:#78350f; color:#fbbf24;">🟡</div>
-                Niveau 2 (99-201)
-            </button>
-            <button class="menu-btn red" onclick="startNumbers(199, 401)">
-                <div class="badge" style="background:#7f1d1d; color:#f87171;">🔴</div>
-                Niveau 3 (199-401)
-            </button>
-            <button class="menu-btn blue" onclick="startSequence()">
-                <div class="badge" style="background:#1e3a8a; color:#60a5fa;">🔢</div>
-                Suites de nombres
-            </button>
-            <button class="menu-btn blue" onclick="startLetters()">
-                <div class="badge" style="background:#1e3a8a; color:#60a5fa;">🔤</div>
-                Lettres (A-Z)
-            </button>
-            <button class="menu-btn purple" onclick="startSyllables()">
-                <div class="badge" style="background:#4c1d95; color:#c084fc;">📚</div>
-                Syllabes
-            </button>
-            <button class="menu-btn green" onclick="startQuiz()">
-                <div class="badge" style="background:#065f46; color:#10b981;">🎮</div>
-                Mode Quiz
-            </button>
+        <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
+        
+        <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
+            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale :</label><br>
+            <select id="voiceSelect" onchange="changeVoice()">
+                <option value="">Chargement des voix...</option>
+            </select>
+            <button class="btn-action" style="font-size:12px; padding:4px 8px;" onclick="testSpeech()">🔊 Tester la voix</button>
+            <br><br>
+            <label><input type="checkbox" id="autoCheck"> Défilement automatique</label><br><br>
+            <label>Délai (sec) : <input type="number" id="autoDelay" value="4" min="1" style="width:50px;"></label>
+            <input type="hidden" id="hideDelay" value="0">
         </div>
     </div>
 
+    <!-- ÉCRAN AFFICHAGE -->
     <div id="screenDisplay" class="screen">
-        <div class="app-header">
-            <button class="btn-icon" onclick="stopAutoAndBack()">🏠</button>
-            <div id="displayTitle" style="font-weight: bold; color: var(--text-sub)">Mode</div>
-            <button class="btn-icon" onclick="speakCurrent()">🔊</button>
+        <h2 id="displayTitle">---</h2>
+        
+        <div id="lettersToggle" class="toggle-group" style="display:none;">
+            <button id="btnMAJ" class="btn-toggle active" onclick="setCase(true)">MAJUSCULES</button>
+            <button id="btnMIN" class="btn-toggle" onclick="setCase(false)">minuscules</button>
         </div>
 
-        <div id="lettersToggle" class="toggle-group" style="display:none; margin: 10px auto;">
-            <button id="btnMAJ" class="toggle-btn active" onclick="setCase(true)">MAJUSCULES</button>
-            <button id="btnMIN" class="toggle-btn" onclick="setCase(false)">minuscules</button>
+        <div id="syllablesToggle" class="toggle-group" style="display:none;">
+            <button id="btnSylN1" class="btn-toggle active" onclick="setSyllablesLevel(1)">Niveau 1 (Simple)</button>
+            <button id="btnSylN2" class="btn-toggle" onclick="setSyllablesLevel(2)">Niveau 2 (Complexe)</button>
         </div>
 
-        <div id="syllablesToggle" class="toggle-group" style="display:none; margin: 10px auto;">
-            <button id="btnSylN1" class="toggle-btn active" onclick="setSyllablesLevel(1)">Niveau 1</button>
-            <button id="btnSylN2" class="toggle-btn" onclick="setSyllablesLevel(2)">Niveau 2</button>
+        <div id="mainText" class="display-box">--</div>
+        <div id="sequenceArea" class="seq-area" style="display:none;"></div>
+
+        <div>
+            <button class="btn-action" onclick="speakCurrent()">🔊 Écouter</button>
+            <button class="btn-action" onclick="nextItem()">Suivant ➔</button>
         </div>
 
-        <div class="display-area">
-            <div id="mainText" class="main-display">1</div>
-            <div id="sequenceArea" class="sequence-display" style="display:none;"></div>
-        </div>
-
-        <div class="controls">
-            <button class="btn-action" onclick="nextItem()">SUIVANT ➔</button>
-        </div>
+        <button class="btn btn-back" onclick="stopAutoAndBack()">🏠 Retour au Menu</button>
     </div>
 
+    <!-- ÉCRAN QUIZ -->
     <div id="screenQuiz" class="screen">
-        <div class="app-header">
-            <button class="btn-icon" onclick="openScreen('screenMenu')">🏠</button>
-            <div style="font-weight: bold; color: var(--text-sub)">Quiz Interactif</div>
-            <div id="scoreDisplay" style="font-size: 20px; font-weight: bold; color: #f59e0b;">⭐ 0</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Exercices</h2>
+            <div id="scoreDisplay" style="font-size:20px; font-weight:bold; color:#F39C12;">⭐ 0</div>
         </div>
 
-        <!-- Catégories de Quiz -->
-        <div class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
-            <button id="btnQuizCatNumbers" class="toggle-btn active" onclick="setQuizCategory('numbers')">123 Nombres</button>
-            <button id="btnQuizCatSeq" class="toggle-btn" onclick="setQuizCategory('sequence')">🔢 Suites</button>
-            <button id="btnQuizCatSyllables" class="toggle-btn" onclick="setQuizCategory('syllables')">📚 Syllabes</button>
+        <div class="toggle-group">
+            <button id="btnQuizCatNumbers" class="btn-toggle active" onclick="setQuizCategory('numbers')">Nombres</button>
+            <button id="btnQuizCatSeq" class="btn-toggle" onclick="setQuizCategory('sequence')">Suites</button>
+            <button id="btnQuizCatSyllables" class="btn-toggle" onclick="setQuizCategory('syllables')">Syllabes</button>
         </div>
 
-        <!-- Sous-options Nombres -->
-        <div id="quizTypeGroup" class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
-            <button id="btnQuizMode1" class="toggle-btn active" onclick="setQuizMode(1)">Trouve la valeur</button>
-            <button id="btnQuizMode2" class="toggle-btn" onclick="setQuizMode(2)">Répète après moi</button>
+        <div id="quizTypeGroup" class="toggle-group">
+            <button id="btnQuizMode1" class="btn-toggle active" onclick="setQuizMode(1)">Écoute ➔ Choisis</button>
+            <button id="btnQuizMode2" class="btn-toggle" onclick="setQuizMode(2)">Lis ➔ Répète</button>
         </div>
 
-        <!-- Sous-options Syllabes -->
-        <div id="quizSylGroup" class="toggle-group" style="display:none; margin: 5px auto; width: 100%; max-width: 500px;">
-            <button id="btnQuizSylN1" class="toggle-btn active" onclick="setQuizSylLevel(1)">Syllabes N1</button>
-            <button id="btnQuizSylN2" class="toggle-btn" onclick="setQuizSylLevel(2)">Syllabes N2</button>
+        <div id="quizSylGroup" class="toggle-group" style="display:none;">
+            <button id="btnQuizSylN1" class="btn-toggle active" onclick="setQuizSylLevel(1)">Niveau 1</button>
+            <button id="btnQuizSylN2" class="btn-toggle" onclick="setQuizSylLevel(2)">Niveau 2</button>
         </div>
 
-        <div class="display-area">
-            <div id="quizPrompt" style="font-size: 20px; text-align: center; margin-bottom: 10px; color: var(--text-sub);">
-                Écoute et choisis la bonne réponse :
-            </div>
-            
-            <div id="quizBigDisplay" class="main-display" style="display:none;">?</div>
-            <div id="quizSeqDisplay" class="sequence-display" style="display:none; margin-bottom:15px;"></div>
+        <p id="quizPrompt" style="font-size:18px; font-weight:bold; margin-top:15px;">Écoute et choisis le bon nombre :</p>
+        
+        <div id="quizBigDisplay" class="display-box" style="display:none;">--</div>
+        <div id="quizSeqDisplay" class="seq-area" style="display:none;"></div>
 
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <button id="btnListenAgain" class="btn-action" style="display:none;" onclick="speakCurrentQuiz()">🔊 Réécouter</button>
-                <button id="btnMic" class="btn-action btn-mic" onclick="startVoiceRecognition()">🎤 Dicter ta réponse</button>
-            </div>
-
-            <div id="speechStatus" style="font-size: 16px; color: var(--accent-yellow); margin-bottom: 10px; min-height: 24px;"></div>
-
-            <div id="quizChoices" class="quiz-grid"></div>
+        <div>
+            <button id="btnListenAgain" class="btn-action" onclick="speakCurrentQuiz()">🔊 Réécouter</button>
         </div>
+
+        <div id="quizChoices" class="quiz-choices"></div>
+
+        <button class="btn btn-back" onclick="openScreen('screenMenu')">🏠 Quitter le Quiz</button>
     </div>
+</div>
 
-    <div id="screenSettings" class="screen">
-        <div class="app-header">
-            <button class="btn-icon" onclick="openScreen('screenMenu')">🏠</button>
-            <div style="font-weight: bold; color: white">Paramètres</div>
-            <div style="width: 50px;"></div>
-        </div>
-
-        <div style="margin-top: 20px;">
-            <div class="setting-row">
-                <span>Style de voix</span>
-                <div class="setting-control">
-                    <select id="voiceStyleSelect">
-                        <option value="canard" selected>🦆 Canard Enjoué</option>
-                        <option value="hero">🚀 Super-Héros</option>
-                        <option value="alien">👽 Alien de l'Espace</option>
-                        <option value="speaker">📻 Présentateur TV</option>
-                    </select>
-                </div>
-            </div>
-            <div class="setting-row">
-                <span>Défilement Auto</span>
-                <div class="setting-control">
-                    <input type="checkbox" id="autoCheck" style="width: 25px; height: 25px;">
-                </div>
-            </div>
-            <div class="setting-row">
-                <span>Délai d'affichage</span>
-                <div class="setting-control">
-                    <input type="range" id="autoDelay" min="1" max="30" value="5" oninput="document.getElementById('delayVal').innerText = this.value + 's'">
-                    <span id="delayVal" style="width: 35px;">5s</span>
-                </div>
-            </div>
-            <div class="setting-row">
-                <span>Masquer avant d'afficher</span>
-                <div class="setting-control">
-                    <input type="range" id="hideDelay" min="0" max="5" value="0" oninput="document.getElementById('hideVal').innerText = this.value + 's'">
-                    <span id="hideVal" style="width: 35px;">0s</span>
-                </div>
-            </div>
-        </div>
+<!-- OVERLAY DE RÉCOMPENSE -->
+<div id="rewardOverlay" class="reward-overlay">
+    <div class="reward-card">
+        <div id="rewardMsg"><span>🎉</span> Bravo !</div>
     </div>
+</div>
 
-    <script>
-        let currentMode = '';
-        let currentMinNumber = 1;
-        let currentMaxNumber = 100;
-        let isUppercase = true;
-        let currentRawLetter = 'A';
-        let syllablesLevel = 1;
-        let currentValue = '';
-        let currentSeqTarget = 0;
-        let autoTimer = null;
+<script>
+    let currentMode = '';
+    let currentMinNumber = 0;
+    let currentMaxNumber = 1001;
+    let isUppercase = true;
+    let currentRawLetter = 'A';
+    let syllablesLevel = 1;
+    let currentValue = '';
+    let currentSeqTarget = 0;
+    let isSeqRevealed = false;
+    let autoTimer = null;
 
-        // Variables Quiz
-        let quizScore = 0;
-        let quizCategory = 'numbers'; 
-        let quizSylLevel = 1;         
-        let quizTarget = '';
-        let quizMode = 1;             
+    let quizScore = 0;
+    let quizCategory = 'numbers'; 
+    let quizSylLevel = 1;         
+    let quizTarget = '';
+    let quizMode = 1;             
 
-        const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
-        const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
+    let selectedVoice = null;
+    let voicesList = [];
 
-        const rewards = [
-            { icon: "🎉", word: "Bravo !" },
-            { icon: "⭐", word: "Super !" },
-            { icon: "🏆", word: "Excellent !" }
-        ];
+    const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
+    const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
 
-        function formatSpeechText(text, forceSyllables = false) {
-            if (currentMode === 'syllables' || forceSyllables) {
-                const letters = text.toString().toUpperCase().split('').join('... ');
-                return `${letters}... ${text}`;
+    const rewards = [
+        { icon: "🎉", word: "Bravo !" },
+        { icon: "⭐", word: "Super !" },
+        { icon: "🏆", word: "Capitaine des Nombres !" }
+    ];
+
+    function populateVoiceList() {
+        if (!('speechSynthesis' in window)) return;
+        
+        voicesList = window.speechSynthesis.getVoices();
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (!voiceSelect) return;
+
+        voiceSelect.innerHTML = '';
+
+        if (voicesList.length === 0) {
+            voiceSelect.innerHTML = '<option value="">Aucune voix détectée</option>';
+            return;
+        }
+
+        let frVoices = voicesList.filter(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
+        let listToDisplay = frVoices.length > 0 ? frVoices : voicesList;
+
+        listToDisplay.forEach((voice, index) => {
+            const option = document.createElement('option');
+            option.value = voice.name;
+            option.textContent = `${voice.name} (${voice.lang})`;
+            if (frVoices.length > 0 && index === 0 && !selectedVoice) {
+                selectedVoice = voice;
+                option.selected = true;
+            } else if (selectedVoice && selectedVoice.name === voice.name) {
+                option.selected = true;
             }
-            return text.toString();
+            voiceSelect.appendChild(option);
+        });
+
+        if (!selectedVoice && listToDisplay.length > 0) {
+            selectedVoice = listToDisplay[0];
+        }
+    }
+
+    function changeVoice() {
+        const select = document.getElementById('voiceSelect');
+        const voiceName = select.value;
+        selectedVoice = voicesList.find(v => v.name === voiceName) || null;
+    }
+
+    function testSpeech() {
+        speak("Bonjour, voici un test de la voix sélectionnée.");
+    }
+
+    if ('speechSynthesis' in window) {
+        populateVoiceList();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+    }
+
+    document.addEventListener('click', () => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.resume();
+        }
+    }, { capture: true });
+
+    function speak(text, forceSyllables = false) {
+        if (!('speechSynthesis' in window)) return;
+        if (text === undefined || text === null || text === '') return;
+
+        const synth = window.speechSynthesis;
+        synth.cancel();
+        synth.resume();
+
+        let textToSay = text.toString();
+
+        if (forceSyllables || currentMode === 'syllables') {
+            const spelled = textToSay.toUpperCase().split('').join('... ');
+            textToSay = `${spelled}... ${textToSay}`;
         }
 
-        function speak(text, forceSyllables = false) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                
-                const spokenText = formatSpeechText(text, forceSyllables);
-                const utterance = new SpeechSynthesisUtterance(spokenText);
-                utterance.lang = 'fr-FR';
+        const utterance = new SpeechSynthesisUtterance(textToSay);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.8;
 
-                const style = document.getElementById('voiceStyleSelect').value;
-
-                switch (style) {
-                    case 'canard':
-                        utterance.pitch = 1.5; utterance.rate = 0.65; break;
-                    case 'hero':
-                        utterance.pitch = 0.8; utterance.rate = 0.6; break;
-                    case 'alien':
-                        utterance.pitch = 1.9; utterance.rate = 0.5; break;
-                    case 'speaker':
-                        utterance.pitch = 1.1; utterance.rate = 0.6; break;
-                    default:
-                        utterance.pitch = 1.0; utterance.rate = 0.6;
-                }
-
-                window.speechSynthesis.speak(utterance);
-            }
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        } else if (voicesList.length > 0) {
+            const defaultFr = voicesList.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
+            if (defaultFr) utterance.voice = defaultFr;
         }
 
-        function openScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
+        synth.speak(utterance);
+    }
 
-        function stopAutoAndBack() {
-            clearTimeout(autoTimer);
-            openScreen('screenMenu');
-        }
+    function openScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
 
-        function startNumbers(min, max) {
-            currentMode = 'numbers';
-            currentMinNumber = min;
-            currentMaxNumber = max;
-            document.getElementById('displayTitle').innerText = `Nombres (${min}-${max})`;
-            document.getElementById('lettersToggle').style.display = 'none';
-            document.getElementById('syllablesToggle').style.display = 'none';
-            document.getElementById('sequenceArea').style.display = 'none';
-            document.getElementById('mainText').style.display = 'block';
-            openScreen('screenDisplay');
-            nextItem();
-        }
+    function stopAutoAndBack() {
+        clearTimeout(autoTimer);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        openScreen('screenMenu');
+    }
 
-        function startSequence() {
-            currentMode = 'sequence';
-            document.getElementById('displayTitle').innerText = "Suite de Nombres";
-            document.getElementById('lettersToggle').style.display = 'none';
-            document.getElementById('syllablesToggle').style.display = 'none';
-            document.getElementById('mainText').style.display = 'none';
-            document.getElementById('sequenceArea').style.display = 'flex';
-            openScreen('screenDisplay');
-            nextItem();
-        }
+    function startNumbers(min = 0, max = 1001) {
+        currentMode = 'numbers';
+        currentMinNumber = min;
+        currentMaxNumber = max;
+        document.getElementById('displayTitle').innerText = `Nombres (${min}-${max})`;
+        document.getElementById('lettersToggle').style.display = 'none';
+        document.getElementById('syllablesToggle').style.display = 'none';
+        document.getElementById('sequenceArea').style.display = 'none';
+        document.getElementById('mainText').style.display = 'block';
+        openScreen('screenDisplay');
+        nextItem();
+    }
 
-        function startLetters() {
-            currentMode = 'letters';
-            document.getElementById('displayTitle').innerText = "Lettres";
-            document.getElementById('lettersToggle').style.display = 'flex';
-            document.getElementById('syllablesToggle').style.display = 'none';
-            document.getElementById('sequenceArea').style.display = 'none';
-            document.getElementById('mainText').style.display = 'block';
-            openScreen('screenDisplay');
-            nextItem();
-        }
+    function startSequence() {
+        currentMode = 'sequence';
+        document.getElementById('displayTitle').innerText = "Suite de Nombres";
+        document.getElementById('lettersToggle').style.display = 'none';
+        document.getElementById('syllablesToggle').style.display = 'none';
+        document.getElementById('mainText').style.display = 'none';
+        document.getElementById('sequenceArea').style.display = 'flex';
+        openScreen('screenDisplay');
+        nextItem();
+    }
 
-        function setCase(upper) {
-            isUppercase = upper;
-            document.getElementById('btnMAJ').classList.toggle('active', upper);
-            document.getElementById('btnMIN').classList.toggle('active', !upper);
+    function startLetters() {
+        currentMode = 'letters';
+        document.getElementById('displayTitle').innerText = "Lettres";
+        document.getElementById('lettersToggle').style.display = 'flex';
+        document.getElementById('syllablesToggle').style.display = 'none';
+        document.getElementById('sequenceArea').style.display = 'none';
+        document.getElementById('mainText').style.display = 'block';
+        openScreen('screenDisplay');
+        nextItem();
+    }
+
+    function setCase(upper) {
+        isUppercase = upper;
+        document.getElementById('btnMAJ').classList.toggle('active', upper);
+        document.getElementById('btnMIN').classList.toggle('active', !upper);
+        
+        if (currentMode === 'letters') {
+            currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
+            document.getElementById('mainText').innerText = currentValue;
+            speak(currentValue);
+        }
+    }
+
+    function startSyllables() {
+        currentMode = 'syllables';
+        document.getElementById('displayTitle').innerText = "Syllabes";
+        document.getElementById('lettersToggle').style.display = 'none';
+        document.getElementById('syllablesToggle').style.display = 'flex';
+        document.getElementById('sequenceArea').style.display = 'none';
+        document.getElementById('mainText').style.display = 'block';
+        openScreen('screenDisplay');
+        nextItem();
+    }
+
+    function setSyllablesLevel(lvl) {
+        syllablesLevel = lvl;
+        document.getElementById('btnSylN1').classList.toggle('active', lvl === 1);
+        document.getElementById('btnSylN2').classList.toggle('active', lvl === 2);
+        nextItem();
+    }
+
+    function revealSeqTarget() {
+        if (isSeqRevealed) return;
+        isSeqRevealed = true;
+        const targetBox = document.getElementById('seqTargetBox');
+        if (targetBox) {
+            targetBox.innerText = currentSeqTarget;
+            speak(`Le nombre manquant est ${currentSeqTarget}`);
+        }
+    }
+
+    function nextItem() {
+        clearTimeout(autoTimer);
+        const mainDisplay = document.getElementById('mainText');
+        const seqArea = document.getElementById('sequenceArea');
+        const hideSec = parseInt(document.getElementById('hideDelay').value) || 0;
+
+        if (currentMode === 'numbers') {
+            currentValue = Math.floor(Math.random() * (currentMaxNumber - currentMinNumber + 1)) + currentMinNumber;
+            mainDisplay.innerText = currentValue;
+            speak(currentValue);
+        } else if (currentMode === 'sequence') {
+            isSeqRevealed = false;
+            const startNum = Math.floor(Math.random() * 996);
+            currentSeqTarget = startNum + 4;
             
-            if (currentMode === 'letters') {
-                currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
-                document.getElementById('mainText').innerText = currentValue;
-                speak(currentValue);
-            }
-        }
-
-        function startSyllables() {
-            currentMode = 'syllables';
-            document.getElementById('displayTitle').innerText = "Syllabes";
-            document.getElementById('lettersToggle').style.display = 'none';
-            document.getElementById('syllablesToggle').style.display = 'flex';
-            document.getElementById('sequenceArea').style.display = 'none';
-            document.getElementById('mainText').style.display = 'block';
-            openScreen('screenDisplay');
-            nextItem();
-        }
-
-        function setSyllablesLevel(lvl) {
-            syllablesLevel = lvl;
-            document.getElementById('btnSylN1').classList.toggle('active', lvl === 1);
-            document.getElementById('btnSylN2').classList.toggle('active', lvl === 2);
-            nextItem();
-        }
-
-        function nextItem() {
-            clearTimeout(autoTimer);
-            const mainDisplay = document.getElementById('mainText');
-            const seqArea = document.getElementById('sequenceArea');
-            const hideSec = parseInt(document.getElementById('hideDelay').value);
-
-            if (currentMode === 'numbers') {
-                currentValue = Math.floor(Math.random() * (currentMaxNumber - currentMinNumber + 1)) + currentMinNumber;
-                mainDisplay.innerText = currentValue;
-                speak(currentValue);
-            } else if (currentMode === 'sequence') {
-                const startNum = Math.floor(Math.random() * 396);
-                currentSeqTarget = startNum + 4;
-                
-                seqArea.innerHTML = '';
-                for (let i = 0; i < 6; i++) {
-                    const num = startNum + i;
-                    const box = document.createElement('div');
-                    box.className = 'seq-box';
-                    if (i === 4) {
-                        box.classList.add('missing');
-                        box.innerText = '?';
-                        box.id = 'seqTargetBox';
-                    } else {
-                        box.innerText = num;
-                    }
-                    seqArea.appendChild(box);
+            seqArea.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const num = startNum + i;
+                const box = document.createElement('div');
+                box.className = 'seq-box';
+                if (i === 4) {
+                    box.classList.add('missing');
+                    box.innerText = '?';
+                    box.id = 'seqTargetBox';
+                } else {
+                    box.innerText = num;
                 }
-
-                setTimeout(() => {
-                    const targetBox = document.getElementById('seqTargetBox');
-                    if (targetBox) {
-                        targetBox.innerText = currentSeqTarget;
-                        speak(`Le nombre manquant est ${currentSeqTarget}`);
-                    }
-                }, 1200);
-
-            } else if (currentMode === 'letters') {
-                const charCode = Math.floor(Math.random() * 26) + 65;
-                currentRawLetter = String.fromCharCode(charCode);
-                currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
-                mainDisplay.innerText = currentValue;
-                speak(currentValue);
-            } else if (currentMode === 'syllables') {
-                const pool = syllablesLevel === 1 ? syllablesN1 : syllablesN2;
-                currentValue = pool[Math.floor(Math.random() * pool.length)];
-                mainDisplay.innerText = currentValue;
-                speak(currentValue);
+                seqArea.appendChild(box);
             }
 
             if (document.getElementById('autoCheck').checked) {
-                const delay = parseInt(document.getElementById('autoDelay').value) + (currentMode === 'sequence' ? 3 : hideSec);
-                autoTimer = setTimeout(nextItem, delay * 1000);
+                setTimeout(() => { revealSeqTarget(); }, 2500);
             }
+
+        } else if (currentMode === 'letters') {
+            const charCode = Math.floor(Math.random() * 26) + 65;
+            currentRawLetter = String.fromCharCode(charCode);
+            currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
+            mainDisplay.innerText = currentValue;
+            speak(currentValue);
+        } else if (currentMode === 'syllables') {
+            const pool = syllablesLevel === 1 ? syllablesN1 : syllablesN2;
+            currentValue = pool[Math.floor(Math.random() * pool.length)];
+            mainDisplay.innerText = currentValue;
+            speak(currentValue, true);
         }
 
-        function speakCurrent() { 
-            if (currentMode === 'sequence') {
-                speak(currentSeqTarget.toString());
-            } else {
-                speak(currentValue); 
-            }
+        if (document.getElementById('autoCheck').checked) {
+            const delay = parseInt(document.getElementById('autoDelay').value) + (currentMode === 'sequence' ? 4 : hideSec);
+            autoTimer = setTimeout(nextItem, delay * 1000);
         }
+    }
 
-        // --- SECTION QUIZ ---
-
-        function startQuiz() {
-            currentMode = 'quiz';
-            openScreen('screenQuiz');
-            nextQuizQuestion();
+    function speakCurrent() { 
+        if (currentMode === 'sequence') {
+            speak(currentSeqTarget.toString());
+        } else {
+            speak(currentValue.toString(), currentMode === 'syllables'); 
         }
+    }
 
-        function setQuizCategory(cat) {
-            quizCategory = cat;
-            document.getElementById('btnQuizCatNumbers').classList.toggle('active', cat === 'numbers');
-            document.getElementById('btnQuizCatSeq').classList.toggle('active', cat === 'sequence');
-            document.getElementById('btnQuizCatSyllables').classList.toggle('active', cat === 'syllables');
-            
-            document.getElementById('quizTypeGroup').style.display = cat === 'numbers' ? 'flex' : 'none';
-            document.getElementById('quizSylGroup').style.display = cat === 'syllables' ? 'flex' : 'none';
-            
-            nextQuizQuestion();
-        }
+    function startQuiz() {
+        currentMode = 'quiz';
+        openScreen('screenQuiz');
+        nextQuizQuestion();
+    }
 
-        function setQuizMode(mode) {
-            quizMode = mode;
-            document.getElementById('btnQuizMode1').classList.toggle('active', mode === 1);
-            document.getElementById('btnQuizMode2').classList.toggle('active', mode === 2);
-            nextQuizQuestion();
-        }
+    function setQuizCategory(cat) {
+        quizCategory = cat;
+        document.getElementById('btnQuizCatNumbers').classList.toggle('active', cat === 'numbers');
+        document.getElementById('btnQuizCatSeq').classList.toggle('active', cat === 'sequence');
+        document.getElementById('btnQuizCatSyllables').classList.toggle('active', cat === 'syllables');
+        
+        document.getElementById('quizTypeGroup').style.display = cat === 'numbers' ? 'flex' : 'none';
+        document.getElementById('quizSylGroup').style.display = cat === 'syllables' ? 'flex' : 'none';
+        
+        nextQuizQuestion();
+    }
 
-        function setQuizSylLevel(lvl) {
-            quizSylLevel = lvl;
-            document.getElementById('btnQuizSylN1').classList.toggle('active', lvl === 1);
-            document.getElementById('btnQuizSylN2').classList.toggle('active', lvl === 2);
-            nextQuizQuestion();
-        }
+    function setQuizMode(mode) {
+        quizMode = mode;
+        document.getElementById('btnQuizMode1').classList.toggle('active', mode === 1);
+        document.getElementById('btnQuizMode2').classList.toggle('active', mode === 2);
+        nextQuizQuestion();
+    }
 
-        function nextQuizQuestion() {
-            const choicesContainer = document.getElementById('quizChoices');
-            const bigDisplay = document.getElementById('quizBigDisplay');
-            const seqDisplay = document.getElementById('quizSeqDisplay');
-            const listenBtn = document.getElementById('btnListenAgain');
-            const prompt = document.getElementById('quizPrompt');
-            document.getElementById('speechStatus').innerText = '';
+    function setQuizSylLevel(lvl) {
+        quizSylLevel = lvl;
+        document.getElementById('btnQuizSylN1').classList.toggle('active', lvl === 1);
+        document.getElementById('btnQuizSylN2').classList.toggle('active', lvl === 2);
+        nextQuizQuestion();
+    }
 
-            choicesContainer.innerHTML = '';
-            seqDisplay.style.display = 'none';
+    function nextQuizQuestion() {
+        const choicesContainer = document.getElementById('quizChoices');
+        const bigDisplay = document.getElementById('quizBigDisplay');
+        const seqDisplay = document.getElementById('quizSeqDisplay');
+        const listenBtn = document.getElementById('btnListenAgain');
+        const prompt = document.getElementById('quizPrompt');
 
-            if (quizCategory === 'numbers') {
-                quizTarget = Math.floor(Math.random() * 402);
+        choicesContainer.innerHTML = '';
+        seqDisplay.style.display = 'none';
 
-                if (quizMode === 1) {
-                    prompt.innerText = "Écoute et choisis ou dicte le bon nombre :";
-                    bigDisplay.style.display = 'none';
-                    listenBtn.style.display = 'inline-flex';
+        if (quizCategory === 'numbers') {
+            quizTarget = Math.floor(Math.random() * 1002);
 
-                    let choices = [quizTarget];
-                    while (choices.length < 4) {
-                        let rand = Math.floor(Math.random() * 402);
-                        if (!choices.includes(rand)) choices.push(rand);
-                    }
-                    choices.sort(() => Math.random() - 0.5);
-
-                    choices.forEach(val => {
-                        const btn = document.createElement('button');
-                        btn.className = 'quiz-choice';
-                        btn.innerText = val;
-                        btn.onclick = () => checkQuizAnswer(val);
-                        choicesContainer.appendChild(btn);
-                    });
-
-                    speakCurrentQuiz();
-                } else {
-                    prompt.innerText = "Lis le nombre fort ou dicte-le :";
-                    bigDisplay.style.display = 'block';
-                    bigDisplay.innerText = quizTarget;
-                    listenBtn.style.display = 'none';
-
-                    const btn = document.createElement('button');
-                    btn.className = 'btn-action';
-                    btn.style.gridColumn = "span 2";
-                    btn.innerText = "J'ai répété ! ➔";
-                    btn.onclick = () => triggerReward();
-                    choicesContainer.appendChild(btn);
-
-                    speak(quizTarget.toString());
-                }
-            } else if (quizCategory === 'sequence') {
-                const startNum = Math.floor(Math.random() * 396);
-                quizTarget = startNum + 4; 
-
-                prompt.innerText = "Quel est le nombre manquant dans la suite ?";
+            if (quizMode === 1) {
+                prompt.innerText = "Écoute et choisis le bon nombre :";
                 bigDisplay.style.display = 'none';
-                listenBtn.style.display = 'none';
-                seqDisplay.style.display = 'flex';
-                seqDisplay.innerHTML = '';
-
-                for (let i = 0; i < 6; i++) {
-                    const num = startNum + i;
-                    const box = document.createElement('div');
-                    box.className = 'seq-box';
-                    if (i === 4) {
-                        box.classList.add('missing');
-                        box.innerText = '?';
-                    } else {
-                        box.innerText = num;
-                    }
-                    seqDisplay.appendChild(box);
-                }
+                listenBtn.style.display = 'inline-flex';
 
                 let choices = [quizTarget];
                 while (choices.length < 4) {
-                    let rand = Math.floor(Math.random() * 402);
+                    let rand = Math.floor(Math.random() * 1002);
                     if (!choices.includes(rand)) choices.push(rand);
                 }
                 choices.sort(() => Math.random() - 0.5);
@@ -684,123 +462,123 @@
                     choicesContainer.appendChild(btn);
                 });
 
-                speak("Trouve le nombre manquant dans la suite !");
-
-            } else if (quizCategory === 'syllables') {
-                const pool = quizSylLevel === 1 ? syllablesN1 : syllablesN2;
-                quizTarget = pool[Math.floor(Math.random() * pool.length)];
-
-                prompt.innerText = "Écoute et sélectionne ou dicte la bonne syllabe :";
-                bigDisplay.style.display = 'none';
-                listenBtn.style.display = 'inline-flex';
-
-                let choices = [quizTarget];
-                while (choices.length < 4) {
-                    let randSyl = pool[Math.floor(Math.random() * pool.length)];
-                    if (!choices.includes(randSyl)) choices.push(randSyl);
-                }
-                choices.sort(() => Math.random() - 0.5);
-
-                choices.forEach(val => {
-                    const btn = document.createElement('button');
-                    btn.className = 'quiz-choice';
-                    btn.innerText = val;
-                    btn.onclick = () => checkQuizAnswer(val);
-                    choicesContainer.appendChild(btn);
-                });
-
                 speakCurrentQuiz();
-            }
-        }
-
-        function speakCurrentQuiz() { 
-            const isSyl = (quizCategory === 'syllables');
-            speak(quizTarget, isSyl); 
-        }
-
-        function startVoiceRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
-                return;
-            }
-
-            const micBtn = document.getElementById('btnMic');
-            const statusDiv = document.getElementById('speechStatus');
-            
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'fr-FR';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                micBtn.classList.add('listening');
-                statusDiv.innerText = "🎙️ J'écoute... Parle maintenant !";
-            };
-
-            recognition.onend = () => {
-                micBtn.classList.remove('listening');
-            };
-
-            recognition.onerror = () => {
-                micBtn.classList.remove('listening');
-                statusDiv.innerText = "Pas entendu, retente !";
-            };
-
-            recognition.onresult = (event) => {
-                const spokenText = event.results[0][0].transcript.trim().toLowerCase();
-                statusDiv.innerText = `Tu as dit : "${spokenText}"`;
-
-                let isCorrect = false;
-
-                if (quizCategory === 'syllables') {
-                    if (spokenText === quizTarget.toLowerCase() || spokenText.replace(/[^a-z]/g, '') === quizTarget.toLowerCase()) {
-                        isCorrect = true;
-                    }
-                } else {
-                    const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
-                    if (parsedNum === parseInt(quizTarget, 10) || spokenText.includes(quizTarget.toString())) {
-                        isCorrect = true;
-                    }
-                }
-
-                if (isCorrect) {
-                    quizScore += 1;
-                    document.getElementById('scoreDisplay').innerText = `⭐ ${quizScore}`;
-                    triggerReward();
-                } else {
-                    speak("Raté, essaye encore !");
-                }
-            };
-
-            recognition.start();
-        }
-
-        function checkQuizAnswer(val) {
-            if (val.toString() === quizTarget.toString()) {
-                quizScore += 1;
-                document.getElementById('scoreDisplay').innerText = `⭐ ${quizScore}`;
-                triggerReward();
             } else {
-                speak("Raté, essaye encore !");
+                prompt.innerText = "Lis le nombre fort :";
+                bigDisplay.style.display = 'block';
+                bigDisplay.innerText = quizTarget;
+                listenBtn.style.display = 'none';
+
+                const btn = document.createElement('button');
+                btn.className = 'btn-action';
+                btn.style.gridColumn = "span 2";
+                btn.innerText = "J'ai répété ! ➔";
+                btn.onclick = () => triggerReward();
+                choicesContainer.appendChild(btn);
+
+                speak(quizTarget.toString());
             }
+        } else if (quizCategory === 'sequence') {
+            const startNum = Math.floor(Math.random() * 996);
+            quizTarget = startNum + 4; 
+
+            prompt.innerText = "Quel est le nombre manquant dans la suite ?";
+            bigDisplay.style.display = 'none';
+            listenBtn.style.display = 'none';
+            seqDisplay.style.display = 'flex';
+            seqDisplay.innerHTML = '';
+
+            for (let i = 0; i < 6; i++) {
+                const num = startNum + i;
+                const box = document.createElement('div');
+                box.className = 'seq-box';
+                if (i === 4) {
+                    box.classList.add('missing');
+                    box.innerText = '?';
+                } else {
+                    box.innerText = num;
+                }
+                seqDisplay.appendChild(box);
+            }
+
+            let choices = [quizTarget];
+            while (choices.length < 4) {
+                let rand = Math.floor(Math.random() * 1002);
+                if (!choices.includes(rand)) choices.push(rand);
+            }
+            choices.sort(() => Math.random() - 0.5);
+
+            choices.forEach(val => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-choice';
+                btn.innerText = val;
+                btn.onclick = () => checkQuizAnswer(val);
+                choicesContainer.appendChild(btn);
+            });
+
+            speak("Trouve le nombre manquant dans la suite !");
+
+        } else if (quizCategory === 'syllables') {
+            const pool = quizSylLevel === 1 ? syllablesN1 : syllablesN2;
+            quizTarget = pool[Math.floor(Math.random() * pool.length)];
+
+            prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
+            bigDisplay.style.display = 'none';
+            listenBtn.style.display = 'inline-flex';
+
+            let choices = [quizTarget];
+            while (choices.length < 4) {
+                let randSyl = pool[Math.floor(Math.random() * pool.length)];
+                if (!choices.includes(randSyl)) choices.push(randSyl);
+            }
+            choices.sort(() => Math.random() - 0.5);
+
+            choices.forEach(val => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-choice';
+                btn.innerText = val;
+                btn.onclick = () => checkQuizAnswer(val);
+                choicesContainer.appendChild(btn);
+            });
+
+            speakCurrentQuiz();
         }
+    }
 
-        function triggerReward() {
-            const overlay = document.getElementById('rewardOverlay');
-            const msg = document.getElementById('rewardMsg');
-            const rewardItem = rewards[Math.floor(Math.random() * rewards.length)];
-            
-            msg.innerHTML = `<span>${rewardItem.icon}</span> ${rewardItem.word}`;
-            overlay.classList.add('show');
-            
-            speak(rewardItem.word);
+    function speakCurrentQuiz() { 
+        const isSyl = (quizCategory === 'syllables');
+        speak(quizTarget.toString(), isSyl); 
+    }
 
-            setTimeout(() => {
-                overlay.classList.remove('show');
+    function checkQuizAnswer(val) {
+        if (val.toString() === quizTarget.toString()) {
+            quizScore += 1;
+            document.getElementById('scoreDisplay').innerText = `⭐ ${quizScore}`;
+            triggerReward();
+        } else {
+            speak("Raté, essaye encore !");
+        }
+    }
+
+    function triggerReward() {
+        const overlay = document.getElementById('rewardOverlay');
+        const msg = document.getElementById('rewardMsg');
+        const rewardItem = rewards[Math.floor(Math.random() * rewards.length)];
+        
+        msg.innerHTML = `<span>${rewardItem.icon}</span> ${rewardItem.word}`;
+        overlay.classList.add('show');
+        
+        speak(rewardItem.word);
+
+        setTimeout(() => {
+            overlay.classList.remove('show');
+            if (currentMode === 'quiz') {
                 nextQuizQuestion();
-            }, 1800);
-        }
-    </script>
+            } else if (currentMode === 'sequence') {
+                nextItem();
+            }
+        }, 1800);
+    }
+</script>
 </body>
 </html>
