@@ -89,7 +89,7 @@
         <div>
             <button class="btn-action" onclick="speakCurrent()">🔊 Écouter</button>
             <button class="btn-action" onclick="nextItem()">Suivant ➔</button>
-            <button id="btnSeqMic" class="btn-action mic-btn" style="display:none;" onclick="startSeqVoiceRecognition()">🎙️ Dicter</button>
+            <button id="btnDisplayMic" class="btn-action mic-btn" style="display:none;" onclick="startDisplayVoiceRecognition()">🎙️ Dicter</button>
         </div>
         <div id="displaySpeechStatus" style="margin-top:10px; font-weight:bold; color:#7F8C8D;"></div>
 
@@ -229,7 +229,6 @@
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
 
-        // Profils audio pour chaque type de voix
         let pitch = 1.0;
         let rate = 0.8;
 
@@ -284,7 +283,7 @@
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'none';
-        document.getElementById('btnSeqMic').style.display = 'none';
+        document.getElementById('btnDisplayMic').style.display = 'inline-flex';
         document.getElementById('displaySpeechStatus').innerText = '';
         document.getElementById('mainText').style.display = 'block';
         openScreen('screenDisplay');
@@ -298,7 +297,7 @@
         document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('mainText').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'flex';
-        document.getElementById('btnSeqMic').style.display = 'inline-flex';
+        document.getElementById('btnDisplayMic').style.display = 'inline-flex';
         document.getElementById('displaySpeechStatus').innerText = '';
         openScreen('screenDisplay');
         nextItem();
@@ -310,7 +309,7 @@
         document.getElementById('lettersToggle').style.display = 'flex';
         document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'none';
-        document.getElementById('btnSeqMic').style.display = 'none';
+        document.getElementById('btnDisplayMic').style.display = 'none';
         document.getElementById('displaySpeechStatus').innerText = '';
         document.getElementById('mainText').style.display = 'block';
         openScreen('screenDisplay');
@@ -335,7 +334,7 @@
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'flex';
         document.getElementById('sequenceArea').style.display = 'none';
-        document.getElementById('btnSeqMic').style.display = 'none';
+        document.getElementById('btnDisplayMic').style.display = 'none';
         document.getElementById('displaySpeechStatus').innerText = '';
         document.getElementById('mainText').style.display = 'block';
         openScreen('screenDisplay');
@@ -422,7 +421,7 @@
         }
     }
 
-    function startSeqVoiceRecognition() {
+    function startDisplayVoiceRecognition() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
@@ -432,7 +431,7 @@
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         stopRecognition();
 
-        const micBtn = document.getElementById('btnSeqMic');
+        const micBtn = document.getElementById('btnDisplayMic');
         const statusDiv = document.getElementById('displaySpeechStatus');
         
         const recognition = new SpeechRecognition();
@@ -460,12 +459,16 @@
             const spokenText = event.results[0][0].transcript.trim().toLowerCase();
             statusDiv.innerText = `Tu as dit : "${spokenText}"`;
 
+            const target = (currentMode === 'sequence') ? currentSeqTarget : currentValue;
             const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
-            if (parsedNum === parseInt(currentSeqTarget, 10) || spokenText.includes(currentSeqTarget.toString())) {
-                revealSeqTarget();
+
+            if (parsedNum === parseInt(target, 10) || spokenText.includes(target.toString())) {
+                if (currentMode === 'sequence') {
+                    revealSeqTarget();
+                }
                 triggerReward();
             } else {
-                speak("Ce n'est pas le bon nombre, essaye encore !");
+                speak("Ce n'est pas la bonne réponse, essaye encore !");
             }
         };
 
@@ -713,7 +716,7 @@
             overlay.classList.remove('show');
             if (currentMode === 'quiz') {
                 nextQuizQuestion();
-            } else if (currentMode === 'sequence') {
+            } else if (currentMode === 'sequence' || currentMode === 'numbers') {
                 nextItem();
             }
         }, 1800);
