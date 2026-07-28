@@ -362,7 +362,7 @@
         let currentSeqTarget = 0;
         let isSeqRevealed = false;
         let autoTimer = null;
-        let voiceUnlocked = false;
+        let audioContextUnlocked = false;
 
         let quizScore = 0;
         let quizCategory = 'numbers'; 
@@ -379,17 +379,27 @@
             { icon: "🏆", word: "Capitaine des Nombres !" }
         ];
 
-        // Déverrouillage de l'API Audio / SpeechSynthesis au premier clic utilisateur (contournement Safari/macOS/iOS)
-        function unlockVoice() {
-            if (!voiceUnlocked && 'speechSynthesis' in window) {
-                const emptyUtterance = new SpeechSynthesisUtterance('');
-                emptyUtterance.volume = 0;
-                window.speechSynthesis.speak(emptyUtterance);
-                voiceUnlocked = true;
+        // DÉVERROUILLAGE PHYSIQUE DU SON SUR TOUS LES NAVIGATEURS (iOS / Safari / Chrome)
+        function unlockAudioEngine() {
+            if (!audioContextUnlocked) {
+                // 1. Déverrouillage AudioContext
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const ctx = new AudioContext();
+                    ctx.resume();
+                }
+                
+                // 2. Relance de la synthèse vocale
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.resume();
+                }
+                
+                audioContextUnlocked = true;
             }
         }
-        document.addEventListener('click', unlockVoice, { once: true });
-        document.addEventListener('touchstart', unlockVoice, { once: true });
+
+        document.addEventListener('click', unlockAudioEngine, { capture: true });
+        document.addEventListener('touchstart', unlockAudioEngine, { capture: true });
 
         function formatSpeechText(text, forceSyllables = false) {
             if (text === undefined || text === null || text === '') return '';
@@ -404,20 +414,22 @@
         function speak(text, forceSyllables = false) {
             if (!('speechSynthesis' in window)) return;
 
-            window.speechSynthesis.cancel();
-
             const spokenText = formatSpeechText(text, forceSyllables);
             if (!spokenText) return;
 
-            // Utilisation d'un léger délai pour laisser à speechSynthesis.cancel() le temps de purger sur Safari
+            // Annulation préalable de la parole en cours
+            window.speechSynthesis.cancel();
+
+            // Attente minimale pour laisser le temps au navigateur de libérer le canal vocal
             setTimeout(() => {
                 const utterance = new SpeechSynthesisUtterance(spokenText);
                 utterance.lang = 'fr-FR';
 
                 const voices = window.speechSynthesis.getVoices();
-                // Sélection prioritaire d'une voix FR native
-                const frVoice = voices.find(v => v.lang.startsWith('fr') || v.lang.includes('FR'));
-                if (frVoice) utterance.voice = frVoice;
+                if (voices.length > 0) {
+                    const frVoice = voices.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
+                    if (frVoice) utterance.voice = frVoice;
+                }
 
                 const style = document.getElementById('voiceStyleSelect').value;
                 switch (style) {
@@ -434,10 +446,10 @@
                 }
 
                 window.speechSynthesis.speak(utterance);
-            }, 50);
+            }, 100);
         }
 
-        // Chargement explicite des voix système
+        // Rechargement dynamique des voix au cas où l'événement tarde
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
             if (window.speechSynthesis.onvoiceschanged !== undefined) {
