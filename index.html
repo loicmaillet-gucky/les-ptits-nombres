@@ -102,13 +102,13 @@
 
         .sequence-display {
             display: flex; flex-wrap: wrap; justify-content: center;
-            align-items: center; gap: 10px; width: 100%; max-width: 600px;
+            align-items: center; gap: 10px; width: 100%; max-width: 650px;
         }
 
         .seq-box {
             background: var(--bg-card); border: 2px solid #374151;
             border-radius: 15px; padding: 12px 18px; font-size: 30px;
-            font-weight: bold; color: white; min-width: 65px; text-align: center;
+            font-weight: bold; color: white; min-width: 75px; text-align: center;
         }
 
         .seq-box.missing {
@@ -126,6 +126,7 @@
 
         .controls {
             display: flex; gap: 15px; justify-content: center; align-items: center; padding: 20px 0;
+            flex-wrap: wrap;
         }
 
         .btn-action {
@@ -216,20 +217,12 @@
             <button class="btn-icon" onclick="openScreen('screenSettings')">⚙️</button>
         </div>
         <div class="menu-grid">
-            <button class="menu-btn green" onclick="startNumbers(1, 100)">
-                <div class="badge" style="background:#064e3b; color:#34d399;">🟢</div>
-                Niveau 1 (1-100)
-            </button>
-            <button class="menu-btn yellow" onclick="startNumbers(99, 201)">
-                <div class="badge" style="background:#78350f; color:#fbbf24;">🟡</div>
-                Niveau 2 (99-201)
-            </button>
-            <button class="menu-btn red" onclick="startNumbers(199, 401)">
-                <div class="badge" style="background:#7f1d1d; color:#f87171;">🔴</div>
-                Niveau 3 (199-401)
+            <button class="menu-btn green" onclick="startNumbers(0, 1001)">
+                <div class="badge" style="background:#064e3b; color:#34d399;">🔢</div>
+                Nombres (0 - 1001)
             </button>
             <button class="menu-btn blue" onclick="startSequence()">
-                <div class="badge" style="background:#1e3a8a; color:#60a5fa;">🔢</div>
+                <div class="badge" style="background:#1e3a8a; color:#60a5fa;">🧩</div>
                 Suites de nombres
             </button>
             <button class="menu-btn blue" onclick="startLetters()">
@@ -265,11 +258,13 @@
         </div>
 
         <div class="display-area">
-            <div id="mainText" class="main-display">1</div>
+            <div id="mainText" class="main-display">0</div>
             <div id="sequenceArea" class="sequence-display" style="display:none;"></div>
+            <div id="displaySpeechStatus" style="font-size: 18px; color: var(--accent-yellow); margin-top: 15px; min-height: 24px;"></div>
         </div>
 
         <div class="controls">
+            <button id="btnSeqMic" class="btn-action btn-mic" style="display:none;" onclick="startSeqVoiceRecognition()">🎤 Proposer la réponse</button>
             <button class="btn-action" onclick="nextItem()">SUIVANT ➔</button>
         </div>
     </div>
@@ -284,7 +279,7 @@
         <!-- Catégories de Quiz -->
         <div class="toggle-group" style="margin: 5px auto; width: 100%; max-width: 500px;">
             <button id="btnQuizCatNumbers" class="toggle-btn active" onclick="setQuizCategory('numbers')">123 Nombres</button>
-            <button id="btnQuizCatSeq" class="toggle-btn" onclick="setQuizCategory('sequence')">🔢 Suites</button>
+            <button id="btnQuizCatSeq" class="toggle-btn" onclick="setQuizCategory('sequence')">🧩 Suites</button>
             <button id="btnQuizCatSyllables" class="toggle-btn" onclick="setQuizCategory('syllables')">📚 Syllabes</button>
         </div>
 
@@ -363,13 +358,14 @@
 
     <script>
         let currentMode = '';
-        let currentMinNumber = 1;
-        let currentMaxNumber = 100;
+        let currentMinNumber = 0;
+        let currentMaxNumber = 1001;
         let isUppercase = true;
         let currentRawLetter = 'A';
         let syllablesLevel = 1;
         let currentValue = '';
         let currentSeqTarget = 0;
+        let isSeqRevealed = false;
         let autoTimer = null;
 
         // Variables Quiz
@@ -385,7 +381,7 @@
         const rewards = [
             { icon: "🎉", word: "Bravo !" },
             { icon: "⭐", word: "Super !" },
-            { icon: "🏆", word: "Excellent !" }
+            { icon: "🏆", word: "Capitaine des Nombres !" }
         ];
 
         function formatSpeechText(text, forceSyllables = false) {
@@ -433,7 +429,7 @@
             openScreen('screenMenu');
         }
 
-        function startNumbers(min, max) {
+        function startNumbers(min = 0, max = 1001) {
             currentMode = 'numbers';
             currentMinNumber = min;
             currentMaxNumber = max;
@@ -441,6 +437,8 @@
             document.getElementById('lettersToggle').style.display = 'none';
             document.getElementById('syllablesToggle').style.display = 'none';
             document.getElementById('sequenceArea').style.display = 'none';
+            document.getElementById('btnSeqMic').style.display = 'none';
+            document.getElementById('displaySpeechStatus').innerText = '';
             document.getElementById('mainText').style.display = 'block';
             openScreen('screenDisplay');
             nextItem();
@@ -453,6 +451,8 @@
             document.getElementById('syllablesToggle').style.display = 'none';
             document.getElementById('mainText').style.display = 'none';
             document.getElementById('sequenceArea').style.display = 'flex';
+            document.getElementById('btnSeqMic').style.display = 'inline-flex';
+            document.getElementById('displaySpeechStatus').innerText = '';
             openScreen('screenDisplay');
             nextItem();
         }
@@ -463,6 +463,8 @@
             document.getElementById('lettersToggle').style.display = 'flex';
             document.getElementById('syllablesToggle').style.display = 'none';
             document.getElementById('sequenceArea').style.display = 'none';
+            document.getElementById('btnSeqMic').style.display = 'none';
+            document.getElementById('displaySpeechStatus').innerText = '';
             document.getElementById('mainText').style.display = 'block';
             openScreen('screenDisplay');
             nextItem();
@@ -486,6 +488,8 @@
             document.getElementById('lettersToggle').style.display = 'none';
             document.getElementById('syllablesToggle').style.display = 'flex';
             document.getElementById('sequenceArea').style.display = 'none';
+            document.getElementById('btnSeqMic').style.display = 'none';
+            document.getElementById('displaySpeechStatus').innerText = '';
             document.getElementById('mainText').style.display = 'block';
             openScreen('screenDisplay');
             nextItem();
@@ -498,10 +502,22 @@
             nextItem();
         }
 
+        function revealSeqTarget() {
+            if (isSeqRevealed) return;
+            isSeqRevealed = true;
+            const targetBox = document.getElementById('seqTargetBox');
+            if (targetBox) {
+                targetBox.innerText = currentSeqTarget;
+                speak(`Le nombre manquant est ${currentSeqTarget}`);
+            }
+        }
+
         function nextItem() {
             clearTimeout(autoTimer);
             const mainDisplay = document.getElementById('mainText');
             const seqArea = document.getElementById('sequenceArea');
+            const statusDiv = document.getElementById('displaySpeechStatus');
+            statusDiv.innerText = '';
             const hideSec = parseInt(document.getElementById('hideDelay').value);
 
             if (currentMode === 'numbers') {
@@ -509,7 +525,8 @@
                 mainDisplay.innerText = currentValue;
                 speak(currentValue);
             } else if (currentMode === 'sequence') {
-                const startNum = Math.floor(Math.random() * 396);
+                isSeqRevealed = false;
+                const startNum = Math.floor(Math.random() * 996); // 0 à 1001 (996 + 5 = 1001)
                 currentSeqTarget = startNum + 4;
                 
                 seqArea.innerHTML = '';
@@ -527,13 +544,12 @@
                     seqArea.appendChild(box);
                 }
 
-                setTimeout(() => {
-                    const targetBox = document.getElementById('seqTargetBox');
-                    if (targetBox) {
-                        targetBox.innerText = currentSeqTarget;
-                        speak(`Le nombre manquant est ${currentSeqTarget}`);
-                    }
-                }, 1200);
+                // Auto-révélation si le mode automatique est activé
+                if (document.getElementById('autoCheck').checked) {
+                    setTimeout(() => {
+                        revealSeqTarget();
+                    }, 2500);
+                }
 
             } else if (currentMode === 'letters') {
                 const charCode = Math.floor(Math.random() * 26) + 65;
@@ -549,7 +565,7 @@
             }
 
             if (document.getElementById('autoCheck').checked) {
-                const delay = parseInt(document.getElementById('autoDelay').value) + (currentMode === 'sequence' ? 3 : hideSec);
+                const delay = parseInt(document.getElementById('autoDelay').value) + (currentMode === 'sequence' ? 4 : hideSec);
                 autoTimer = setTimeout(nextItem, delay * 1000);
             }
         }
@@ -560,6 +576,50 @@
             } else {
                 speak(currentValue); 
             }
+        }
+
+        function startSeqVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
+                return;
+            }
+
+            const micBtn = document.getElementById('btnSeqMic');
+            const statusDiv = document.getElementById('displaySpeechStatus');
+            
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = false;
+
+            recognition.onstart = () => {
+                micBtn.classList.add('listening');
+                statusDiv.innerText = "🎙️ J'écoute... Quel est le chiffre manquant ?";
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+            };
+
+            recognition.onerror = () => {
+                micBtn.classList.remove('listening');
+                statusDiv.innerText = "Pas entendu, retente !";
+            };
+
+            recognition.onresult = (event) => {
+                const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+                statusDiv.innerText = `Tu as dit : "${spokenText}"`;
+
+                const parsedNum = parseInt(spokenText.replace(/[^0-9]/g, ''), 10);
+                if (parsedNum === parseInt(currentSeqTarget, 10) || spokenText.includes(currentSeqTarget.toString())) {
+                    revealSeqTarget();
+                    triggerReward();
+                } else {
+                    speak("Ce n'est pas le bon nombre, essaye encore !");
+                }
+            };
+
+            recognition.start();
         }
 
         // --- SECTION QUIZ ---
@@ -608,7 +668,7 @@
             seqDisplay.style.display = 'none';
 
             if (quizCategory === 'numbers') {
-                quizTarget = Math.floor(Math.random() * 402);
+                quizTarget = Math.floor(Math.random() * 1002);
 
                 if (quizMode === 1) {
                     prompt.innerText = "Écoute et choisis ou dicte le bon nombre :";
@@ -617,7 +677,7 @@
 
                     let choices = [quizTarget];
                     while (choices.length < 4) {
-                        let rand = Math.floor(Math.random() * 402);
+                        let rand = Math.floor(Math.random() * 1002);
                         if (!choices.includes(rand)) choices.push(rand);
                     }
                     choices.sort(() => Math.random() - 0.5);
@@ -647,7 +707,7 @@
                     speak(quizTarget.toString());
                 }
             } else if (quizCategory === 'sequence') {
-                const startNum = Math.floor(Math.random() * 396);
+                const startNum = Math.floor(Math.random() * 996);
                 quizTarget = startNum + 4; 
 
                 prompt.innerText = "Quel est le nombre manquant dans la suite ?";
@@ -671,7 +731,7 @@
 
                 let choices = [quizTarget];
                 while (choices.length < 4) {
-                    let rand = Math.floor(Math.random() * 402);
+                    let rand = Math.floor(Math.random() * 1002);
                     if (!choices.includes(rand)) choices.push(rand);
                 }
                 choices.sort(() => Math.random() - 0.5);
@@ -731,7 +791,6 @@
             const recognition = new SpeechRecognition();
             recognition.lang = 'fr-FR';
             recognition.continuous = false;
-            recognition.interimResults = false;
 
             recognition.onstart = () => {
                 micBtn.classList.add('listening');
@@ -798,7 +857,11 @@
 
             setTimeout(() => {
                 overlay.classList.remove('show');
-                nextQuizQuestion();
+                if (currentMode === 'quiz') {
+                    nextQuizQuestion();
+                } else if (currentMode === 'sequence') {
+                    nextItem();
+                }
             }, 1800);
         }
     </script>
