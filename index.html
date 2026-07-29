@@ -54,7 +54,7 @@
         <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
         
         <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
-            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale :</label><br>
+            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale (FR) :</label><br>
             <select id="voiceSelect" onchange="changeVoice()">
                 <option value="duck">🦆 Canard Enjoué</option>
                 <option value="hero">🚀 Super-Héros</option>
@@ -162,8 +162,16 @@
     let quizMode = 1;             
 
     let activeVoiceType = 'duck';
-    let systemVoices = [];
+    let frenchVoices = [];
     let activeRecognition = null;
+
+    // Prononciation phonétique des lettres isolées en français
+    const frenchLetterSpellings = {
+        'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'F':'Èf', 'G':'Gé', 'H':'Hache',
+        'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
+        'Q':'Ku', 'R':'Ère', 'S':'Èsse', 'T':'Té', 'U':'U', 'V':'Vé', 'W':'Double Vé',
+        'X':'Iks', 'Y':'Igrek', 'Z':'Zède'
+    };
 
     const syllablesN1 = ["ba","be","bi","bo","bu","ca","ce","ci","co","cu","da","de","di","do","du","fa","fe","fi","fo","fu","ga","ge","gi","go","gu","la","le","li","lo","lu","ma","me","mi","mo","mu","na","ne","ni","no","nu","pa","pe","pi","po","pu","ra","re","ri","ro","ru","sa","se","si","so","su","ta","te","ti","tu","va","ve","vi","vo","vu"];
     const syllablesN2 = ["cha","che","chi","cho","chu","bra","bre","bri","bro","bru","pla","ple","pli","plo","plu","tra","tre","tri","tro","tru"];
@@ -183,7 +191,13 @@
 
     function initVoices() {
         if ('speechSynthesis' in window) {
-            systemVoices = window.speechSynthesis.getVoices();
+            const allVoices = window.speechSynthesis.getVoices();
+            // Filtrage strict : uniquement les voix explicitement enregistrées en Français
+            frenchVoices = allVoices.filter(v => v.lang && (
+                v.lang.toLowerCase().startsWith('fr') || 
+                v.lang.toLowerCase().includes('fr-fr') ||
+                v.lang.toLowerCase().includes('fr_fr')
+            ));
         }
     }
 
@@ -209,6 +223,18 @@
         }
     }, { capture: true });
 
+    // Ajuste l'orthographe pour imposer une prononciation française correcte
+    function formatSyllablePhonetics(syl) {
+        let clean = syl.toLowerCase();
+        
+        // Empêche de prononcer "e" comme "é" (ex: ple -> pleu, be -> beu)
+        if (clean.endsWith('e')) {
+            clean = clean.slice(0, -1) + 'eu';
+        }
+        
+        return clean;
+    }
+
     function speak(text, forceSyllables = false) {
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
@@ -219,44 +245,51 @@
         synth.cancel();
         synth.resume();
 
-        let textToSay = text.toString();
+        let rawText = text.toString();
+        let textToSay = rawText;
 
-        if (forceSyllables || currentMode === 'syllables') {
-            const spelled = textToSay.toUpperCase().split('').join('... ');
-            textToSay = `${spelled}... ${textToSay}`;
+        if (forceSyllables || currentMode === 'syllables' || (currentMode === 'quiz' && quizCategory === 'syllables')) {
+            // 1. Épellation lettre par lettre avec le nom français de la lettre
+            const spelled = rawText.toUpperCase().split('').map(char => frenchLetterSpellings[char] || char).join('... ');
+            
+            // 2. Prononciation naturelle de la syllabe (ex: "pleu" au lieu de "ple")
+            const phoneticSyllable = formatSyllablePhonetics(rawText);
+            
+            textToSay = `${spelled}... ... ${phoneticSyllable}`;
         }
 
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
 
         let pitch = 1.0;
-        let rate = 0.4; // Vitesse réduite de 50% sur l'ensemble des voix
+        let rate = 0.4; // Vitesse réduite de 50%
 
         switch(activeVoiceType) {
             case 'duck':
                 pitch = 1.8;
-                rate = 0.6; // Réduit de 50% (1.2 -> 0.6)
+                rate = 0.6;
                 break;
             case 'hero':
                 pitch = 0.5;
-                rate = 0.35; // Réduit de 50% (0.7 -> 0.35)
+                rate = 0.35;
                 break;
             case 'alien':
                 pitch = 0.2;
-                rate = 0.7; // Réduit de 50% (1.4 -> 0.7)
+                rate = 0.7;
                 break;
             case 'speaker':
                 pitch = 1.0;
-                rate = 0.45; // Réduit de 50% (0.9 -> 0.45)
+                rate = 0.45;
                 break;
         }
 
         utterance.pitch = pitch;
         utterance.rate = rate;
 
-        if (systemVoices.length > 0) {
-            const defaultFr = systemVoices.find(v => v.lang && (v.lang.startsWith('fr') || v.lang.includes('FR')));
-            if (defaultFr) utterance.voice = defaultFr;
+        // Sélection prioritaire d'une voix nativement française
+        if (frenchVoices.length > 0) {
+            const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
+            utterance.voice = preferredVoice;
         }
 
         synth.speak(utterance);
