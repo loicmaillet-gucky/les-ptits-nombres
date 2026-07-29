@@ -151,7 +151,7 @@
     let frenchVoices = [];
     let activeRecognition = null;
 
-    // Épellation phonétique stricte des lettres isolées
+    // Prononciations isolées des lettres isolées
     const frenchLetterSpellings = {
         'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'É':'É', 'È':'È', 'F':'Èf', 'G':'Gé', 'H':'Hache',
         'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
@@ -174,8 +174,10 @@
         "eau", "ein", "oin", "san", "son", "toi", "vou"
     ];
 
-    // Ajustements phonétiques sans aucun son "Sse"
+    // Ajustements phonétiques précis pour la synthèse vocale
     const phoneticAdjustments = {
+        "sac": "sak",
+        "dra": "dra",
         "be": "beu",
         "de": "deu",
         "fe": "feu",
@@ -251,10 +253,7 @@
             clean = clean.slice(0, -1) + 'eu';
         }
         
-        // Remplacement strict de toute lettre 's' par la prononciation 'Èsse'
-        clean = clean.replace(/s+/g, ' Èsse ');
-        
-        return clean.trim();
+        return clean;
     }
 
     function speak(text, forceSyllables = false) {
@@ -270,13 +269,9 @@
         let rawText = text.toString();
         let textToSay = rawText;
 
+        // Prononciation directe sans épellation
         if (forceSyllables || currentMode === 'syllables' || (currentMode === 'quiz' && quizCategory === 'syllables')) {
-            const chars = rawText.toUpperCase().split('');
-            const spelledArr = chars.map(char => frenchLetterSpellings[char] || char);
-            
-            const spelled = spelledArr.join('... ');
-            const phoneticSyllable = formatSyllablePhonetics(rawText);
-            textToSay = `${spelled}... ... ${phoneticSyllable}`;
+            textToSay = formatSyllablePhonetics(rawText);
         } else if (currentMode === 'letters') {
             const upperChar = rawText.toUpperCase();
             textToSay = frenchLetterSpellings[upperChar] || rawText;
@@ -285,7 +280,7 @@
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
         utterance.pitch = 1.0;
-        utterance.rate = 0.5;
+        utterance.rate = 0.6; // Vitesse adaptée pour une prononciation claire
 
         if (frenchVoices.length > 0) {
             const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
