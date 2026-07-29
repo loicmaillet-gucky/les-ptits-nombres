@@ -54,7 +54,7 @@
         <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
         
         <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
-            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale (FR) :</label><br>
+            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale (FR-FR) :</label><br>
             <select id="voiceSelect" onchange="changeVoice()">
                 <option value="duck">🦆 Canard Enjoué</option>
                 <option value="hero">🚀 Super-Héros</option>
@@ -173,28 +173,22 @@
         'X':'Iks', 'Y':'Igrek', 'Z':'Zède'
     };
 
-    // Base de données syllabes (Base fournie)
+    // Base de données syllabes
     const syllablesN1 = [
-        // Structure Consonne + Voyelle (CV)
         "ba", "bé", "be", "bi", "bo", "bu", 
         "da", "fa", "lu", "ma", "pi", "ra", 
         "se", "sé", "ta", "vu",
-        // Syllabes nasales et voyelles complexes à 2 lettres
         "an", "en", "in", "on", "un", "ou", "au", "eu",
-        // Structure Voyelle + Consonne (VC)
         "ar", "es", "il", "or", "ur"
     ];
 
     const syllablesN2 = [
-        // Structure Consonne + Consonne + Voyelle (CCV)
         "bra", "cha", "cri", "dra", "fro", "pla", "pro", "tra",
-        // Structure Consonne + Voyelle + Consonne (CVC)
         "bar", "col", "mer", "mur", "sac", "top", "val",
-        // Syllabes à voyelles complexes et trigrammes (3 lettres)
         "eau", "ein", "oin", "san", "son", "toi", "vou"
     ];
 
-    // Dictionnaire d'ajustement phonétique pour forcer la voix TTS du navigateur à bien prononcer
+    // Dictionnaire d'ajustement phonétique
     const phoneticAdjustments = {
         "be": "beu",
         "se": "seu",
@@ -242,12 +236,18 @@
     function initVoices() {
         if ('speechSynthesis' in window) {
             const allVoices = window.speechSynthesis.getVoices();
-            // Filtre strict : sélectionne uniquement les voix de langue française
-            frenchVoices = allVoices.filter(v => v.lang && (
-                v.lang.toLowerCase().startsWith('fr') || 
-                v.lang.toLowerCase().includes('fr-fr') ||
-                v.lang.toLowerCase().includes('fr_fr')
-            ));
+            
+            // FILTRAGE STRICT FR-FR : On ne conserve QUE les voix strictement françaises métropolitaines (fr-FR / fr_FR)
+            frenchVoices = allVoices.filter(v => {
+                if (!v.lang) return false;
+                const langLower = v.lang.toLowerCase().replace('_', '-');
+                return langLower === 'fr-fr';
+            });
+
+            // En cas d'absence totale de voix taguée strictement fr-FR, sécurité de secours avec fr
+            if (frenchVoices.length === 0) {
+                frenchVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
+            }
         }
     }
 
@@ -264,7 +264,7 @@
     }
 
     function testSpeech() {
-        speak("Bonjour, voici un test de la voix française sélectionnée.");
+        speak("Bonjour, voici un test avec la voix strictement française.");
     }
 
     document.addEventListener('click', () => {
@@ -273,7 +273,6 @@
         }
     }, { capture: true });
 
-    // Formatage de la prononciation phonétique exacte
     function formatSyllablePhonetics(syl) {
         let clean = syl.toLowerCase().trim();
         
@@ -281,7 +280,6 @@
             return phoneticAdjustments[clean];
         }
         
-        // Règle générale pour la finale en "e" muet
         if (clean.length > 1 && clean.endsWith('e') && !clean.endsWith('ee') && !clean.endsWith('ie')) {
             clean = clean.slice(0, -1) + 'eu';
         }
@@ -303,12 +301,8 @@
         let textToSay = rawText;
 
         if (forceSyllables || currentMode === 'syllables' || (currentMode === 'quiz' && quizCategory === 'syllables')) {
-            // 1. Épellation lettre par lettre avec le nom français de chaque lettre
             const spelled = rawText.toUpperCase().split('').map(char => frenchLetterSpellings[char] || char).join('... ');
-            
-            // 2. Prononciation phonétique adaptée
             const phoneticSyllable = formatSyllablePhonetics(rawText);
-            
             textToSay = `${spelled}... ... ${phoneticSyllable}`;
         }
 
@@ -316,7 +310,7 @@
         utterance.lang = 'fr-FR';
 
         let pitch = 1.0;
-        let rate = 0.4; // Vitesse d'élocution ralentie pour faciliter le traitement auditif
+        let rate = 0.4;
 
         switch(activeVoiceType) {
             case 'duck':
@@ -340,7 +334,7 @@
         utterance.pitch = pitch;
         utterance.rate = rate;
 
-        // Force l'utilisation d'une voix nativement française
+        // Application de la voix strictement fr-FR
         if (frenchVoices.length > 0) {
             const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
             utterance.voice = preferredVoice;
