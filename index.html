@@ -220,7 +220,6 @@
         if ('speechSynthesis' in window) {
             const allVoices = window.speechSynthesis.getVoices();
             
-            // Filtrage strict FR-FR
             frenchVoices = allVoices.filter(v => {
                 if (!v.lang) return false;
                 const langLower = v.lang.toLowerCase().replace('_', '-');
@@ -278,7 +277,10 @@
         let textToSay = rawText;
 
         if (forceSyllables || currentMode === 'syllables' || (currentMode === 'quiz' && quizCategory === 'syllables')) {
-            const spelled = rawText.toUpperCase().split('').map(char => frenchLetterSpellings[char] || char).join('... ');
+            const chars = rawText.toUpperCase().split('');
+            const spelledArr = chars.map(char => frenchLetterSpellings[char] || char);
+            
+            const spelled = spelledArr.join('... ');
             const phoneticSyllable = formatSyllablePhonetics(rawText);
             textToSay = `${spelled}... ... ${phoneticSyllable}`;
         }
@@ -286,7 +288,7 @@
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
         utterance.pitch = 1.0;
-        utterance.rate = 0.5; // Rythme posé pour la clarté pédagogique
+        utterance.rate = 0.5;
 
         if (frenchVoices.length > 0) {
             const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
