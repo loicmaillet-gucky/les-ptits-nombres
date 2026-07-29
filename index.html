@@ -151,7 +151,7 @@
     let frenchVoices = [];
     let activeRecognition = null;
 
-    // --- GESTION DES POOLS SANS RÉPÉTITION (PIOCHE SANS REMISE) ---
+    // --- GESTION DES POOLS SANS RÉPÉTITION ---
     let pools = {
         numbers: [],
         letters: [],
@@ -178,58 +178,75 @@
         return pools[poolName].pop();
     }
 
-    // Base de données des syllabes
+    // --- NOUVELLE BASE DE DONNÉES DE SYLLABES ---
     const rawSyllablesN1 = [
-        "ba", "bé", "be", "bi", "bo", "bu", 
-        "da", "fa", "lu", "ma", "pi", "ra", 
-        "se", "sé", "ta", "vu",
-        "an", "en", "in", "on", "un", "ou", "au", "eu",
-        "ar", "es", "il", "or", "ur"
+        "bo", "ca", "co", "cu", "de", "do", "fi", "fo", "fu", "ji", "ju",
+        "la", "li", "lo", "me", "mi", "mo", "mu", "na", "ni", "no", "nu",
+        "pa", "po", "pu", "re", "ri", "ro", "ru", "sa", "si", "so", "su",
+        "te", "ti", "to", "va", "vi", "vo", "am", "en", "om", "oi", "ai",
+        "ei", "eu", "us", "ut", "if", "op"
     ];
 
     const rawSyllablesN2 = [
-        "bra", "cha", "cri", "dra", "fro", "pla", "pro", "tra",
-        "bar", "col", "mer", "mur", "sac", "top", "val",
-        "eau", "ein", "oin", "san", "son", "toi", "vou"
+        "bla", "bli", "blo", "blu", "bro", "bru", "cla", "cli", "clo", "cru",
+        "dri", "dro", "dru", "fla", "fli", "flo", "flu", "fra", "fri", "fru",
+        "gli", "glo", "gra", "gri", "gro", "pli", "plo", "plu", "pri", "pru",
+        "tri", "tro", "tru", "bac", "bal", "bol", "bus", "cap", "car", "coq",
+        "duc", "dur", "fil", "lac", "mal", "net", "nul", "par", "pic", "pur",
+        "rap", "roc", "sec", "sol", "sur", "tac", "tir", "toc", "vif", "vis",
+        "cha", "chi", "cho", "chu", "gui", "gua", "lou", "mou", "pou", "rou",
+        "sou", "tou", "pan", "pin", "pon", "ran", "ron", "tan", "ton", "moi",
+        "roi", "soi"
     ];
 
     const rawLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
 
-    // Retranscription orthographique française stricte pour la synthèse vocale
+    // --- CORRESPONDANCE PHONÉTIQUE EXACTE (TRANSCRIPTION SIMPLIFIÉE) ---
     const phoneticAdjustments = {
-        "sac": "sack",
-        "dra": "dras",
-        "tra": "traa",
-        "bra": "bras",
-        "pla": "plas",
-        "pro": "proh",
-        "fro": "fros",
-        "cri": "crys",
-        "be": "beu",
+        // 2 Lettres
+        "ca": "ka",
+        "co": "ko",
+        "cu": "ku",
         "de": "deu",
-        "fe": "feu",
-        "le": "leu",
         "me": "meu",
-        "ne": "neu",
-        "pe": "peu",
         "re": "reu",
         "te": "teu",
-        "ve": "veu",
-        "se": "seu",
-        "in": "ain",
-        "ein": "ain",
-        "oin": "ouin",
-        "top": "tope",
-        "mer": "mèr",
-        "eu": "euh",
-        "eau": "ô",
-        "au": "ô",
-        "an": "an",
+        "am": "an",
         "en": "an",
-        "on": "on",
-        "un": "un",
-        "san": "san",
-        "son": "son"
+        "om": "on",
+        "oi": "ou-a",
+        "ai": "è",
+        "ei": "è",
+        "eu": "eu",
+        "us": "uss",
+        "ut": "ut",
+        "if": "if",
+        "op": "op",
+        
+        // 3 Lettres
+        "cla": "kla",
+        "cli": "kli",
+        "clo": "klo",
+        "cru": "kru",
+        "bac": "bak",
+        "bus": "buss",
+        "cap": "kap",
+        "car": "kar",
+        "coq": "kok",
+        "duc": "duk",
+        "lac": "lak",
+        "net": "nèt",
+        "pic": "pik",
+        "roc": "rok",
+        "sec": "sèk",
+        "tac": "tak",
+        "toc": "tok",
+        "vis": "viss",
+        "gui": "ghi",
+        "gua": "goua",
+        "moi": "mou-a",
+        "roi": "rou-a",
+        "soi": "sou-a"
     };
 
     const frenchLetterSpellings = {
@@ -267,7 +284,7 @@
     }
 
     function testSpeech() {
-        speak("sac", true);
+        speak("sec", true);
     }
 
     document.addEventListener('click', () => {
@@ -281,9 +298,6 @@
         if (phoneticAdjustments[clean]) {
             return phoneticAdjustments[clean];
         } 
-        if (clean.length > 1 && clean.endsWith('e') && !clean.endsWith('ee') && !clean.endsWith('ie')) {
-            return clean.slice(0, -1) + 'eu';
-        }
         return clean;
     }
 
@@ -336,7 +350,7 @@
         currentMode = 'numbers';
         currentMinNumber = min;
         currentMaxNumber = max;
-        pools.numbers = []; // Réinitialise la pioche pour ces bornes
+        pools.numbers = []; 
         document.getElementById('displayTitle').innerText = `Nombres (${min}-${max})`;
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'none';
