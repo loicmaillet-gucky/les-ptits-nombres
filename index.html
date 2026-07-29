@@ -45,7 +45,7 @@
     <div id="screenMenu" class="screen active">
         <h1>Apprentissage & Jeux</h1>
         <div class="btn-grid">
-            <button class="btn" onclick="startNumbers(0, 1001)">Nombres (0-1000)</button>
+            <button class="btn" onclick="startNumbers(0, 1000)">Nombres (0-1000)</button>
             <button class="btn" onclick="startSequence()">Suite de Nombres</button>
             <button class="btn" onclick="startLetters()">Lettres</button>
             <button class="btn" onclick="startSyllables()">Syllabes</button>
@@ -134,7 +134,7 @@
 <script>
     let currentMode = '';
     let currentMinNumber = 0;
-    let currentMaxNumber = 1001;
+    let currentMaxNumber = 1000;
     let isUppercase = true;
     let currentRawLetter = 'A';
     let syllablesLevel = 1;
@@ -151,16 +151,35 @@
     let frenchVoices = [];
     let activeRecognition = null;
 
-    // Prononciations isolées des lettres isolées
-    const frenchLetterSpellings = {
-        'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'É':'É', 'È':'È', 'F':'Èf', 'G':'Gé', 'H':'Hache',
-        'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
-        'Q':'Ku', 'R':'Ère', 'S':'Èsse', 'T':'Té', 'U':'U', 'V':'Vé', 'W':'Double Vé',
-        'X':'Iks', 'Y':'Igrek', 'Z':'Zède'
+    // --- GESTION DES POOLS SANS RÉPÉTITION (PIOCHE SANS REMISE) ---
+    let pools = {
+        numbers: [],
+        letters: [],
+        syllablesN1: [],
+        syllablesN2: [],
+        quizNumbers: [],
+        quizSylN1: [],
+        quizSylN2: []
     };
 
-    // Base de données syllabes
-    const syllablesN1 = [
+    function shuffleArray(array) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function getNextFromPool(poolName, defaultGenerator) {
+        if (!pools[poolName] || pools[poolName].length === 0) {
+            pools[poolName] = shuffleArray(defaultGenerator());
+        }
+        return pools[poolName].pop();
+    }
+
+    // Base de données des syllabes
+    const rawSyllablesN1 = [
         "ba", "bé", "be", "bi", "bo", "bu", 
         "da", "fa", "lu", "ma", "pi", "ra", 
         "se", "sé", "ta", "vu",
@@ -168,16 +187,24 @@
         "ar", "es", "il", "or", "ur"
     ];
 
-    const syllablesN2 = [
+    const rawSyllablesN2 = [
         "bra", "cha", "cri", "dra", "fro", "pla", "pro", "tra",
         "bar", "col", "mer", "mur", "sac", "top", "val",
         "eau", "ein", "oin", "san", "son", "toi", "vou"
     ];
 
-    // Ajustements phonétiques précis pour la synthèse vocale
+    const rawLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+
+    // Retranscription orthographique française stricte pour la synthèse vocale
     const phoneticAdjustments = {
-        "sac": "sak",
-        "dra": "dra",
+        "sac": "sack",
+        "dra": "dras",
+        "tra": "traa",
+        "bra": "bras",
+        "pla": "plas",
+        "pro": "proh",
+        "fro": "fros",
+        "cri": "crys",
         "be": "beu",
         "de": "deu",
         "fe": "feu",
@@ -188,14 +215,28 @@
         "re": "reu",
         "te": "teu",
         "ve": "veu",
+        "se": "seu",
         "in": "ain",
-        "ein": "un",
+        "ein": "ain",
         "oin": "ouin",
         "top": "tope",
         "mer": "mèr",
         "eu": "euh",
         "eau": "ô",
-        "au": "ô"
+        "au": "ô",
+        "an": "an",
+        "en": "an",
+        "on": "on",
+        "un": "un",
+        "san": "san",
+        "son": "son"
+    };
+
+    const frenchLetterSpellings = {
+        'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'É':'É', 'È':'È', 'F':'Èf', 'G':'Gé', 'H':'Hache',
+        'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
+        'Q':'Ku', 'R':'Ère', 'S':'Èsse', 'T':'Té', 'U':'U', 'V':'Vé', 'W':'Double Vé',
+        'X':'Iks', 'Y':'Igrek', 'Z':'Zède'
     };
 
     const rewards = [
@@ -214,16 +255,7 @@
     function initVoices() {
         if ('speechSynthesis' in window) {
             const allVoices = window.speechSynthesis.getVoices();
-            
-            frenchVoices = allVoices.filter(v => {
-                if (!v.lang) return false;
-                const langLower = v.lang.toLowerCase().replace('_', '-');
-                return langLower === 'fr-fr';
-            });
-
-            if (frenchVoices.length === 0) {
-                frenchVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
-            }
+            frenchVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().replace('_', '-').startsWith('fr'));
         }
     }
 
@@ -246,13 +278,12 @@
 
     function formatSyllablePhonetics(syl) {
         let clean = syl.toLowerCase().trim();
-        
         if (phoneticAdjustments[clean]) {
-            clean = phoneticAdjustments[clean];
-        } else if (clean.length > 1 && clean.endsWith('e') && !clean.endsWith('ee') && !clean.endsWith('ie')) {
-            clean = clean.slice(0, -1) + 'eu';
+            return phoneticAdjustments[clean];
+        } 
+        if (clean.length > 1 && clean.endsWith('e') && !clean.endsWith('ee') && !clean.endsWith('ie')) {
+            return clean.slice(0, -1) + 'eu';
         }
-        
         return clean;
     }
 
@@ -269,7 +300,6 @@
         let rawText = text.toString();
         let textToSay = rawText;
 
-        // Prononciation directe sans épellation
         if (forceSyllables || currentMode === 'syllables' || (currentMode === 'quiz' && quizCategory === 'syllables')) {
             textToSay = formatSyllablePhonetics(rawText);
         } else if (currentMode === 'letters') {
@@ -280,7 +310,7 @@
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
         utterance.pitch = 1.0;
-        utterance.rate = 0.6; // Vitesse adaptée pour une prononciation claire
+        utterance.rate = 0.6; 
 
         if (frenchVoices.length > 0) {
             const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
@@ -302,10 +332,11 @@
         openScreen('screenMenu');
     }
 
-    function startNumbers(min = 0, max = 1001) {
+    function startNumbers(min = 0, max = 1000) {
         currentMode = 'numbers';
         currentMinNumber = min;
         currentMaxNumber = max;
+        pools.numbers = []; // Réinitialise la pioche pour ces bornes
         document.getElementById('displayTitle').innerText = `Nombres (${min}-${max})`;
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'none';
@@ -332,6 +363,7 @@
 
     function startLetters() {
         currentMode = 'letters';
+        pools.letters = [];
         document.getElementById('displayTitle').innerText = "Lettres";
         document.getElementById('lettersToggle').style.display = 'flex';
         document.getElementById('syllablesToggle').style.display = 'none';
@@ -357,6 +389,8 @@
 
     function startSyllables() {
         currentMode = 'syllables';
+        pools.syllablesN1 = [];
+        pools.syllablesN2 = [];
         document.getElementById('displayTitle').innerText = "Syllabes";
         document.getElementById('lettersToggle').style.display = 'none';
         document.getElementById('syllablesToggle').style.display = 'flex';
@@ -392,12 +426,16 @@
         statusDiv.innerText = '';
 
         if (currentMode === 'numbers') {
-            currentValue = Math.floor(Math.random() * (currentMaxNumber - currentMinNumber + 1)) + currentMinNumber;
+            currentValue = getNextFromPool('numbers', () => {
+                let list = [];
+                for (let i = currentMinNumber; i <= currentMaxNumber; i++) list.push(i);
+                return list;
+            });
             mainDisplay.innerText = currentValue;
             speak(currentValue);
         } else if (currentMode === 'sequence') {
             isSeqRevealed = false;
-            const startNum = Math.floor(Math.random() * 996);
+            const startNum = Math.floor(Math.random() * 995);
             currentSeqTarget = startNum + 4;
             
             seqArea.innerHTML = '';
@@ -416,14 +454,14 @@
             }
 
         } else if (currentMode === 'letters') {
-            const charCode = Math.floor(Math.random() * 26) + 65;
-            currentRawLetter = String.fromCharCode(charCode);
+            currentRawLetter = getNextFromPool('letters', () => rawLetters);
             currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
             mainDisplay.innerText = currentValue;
             speak(currentValue);
         } else if (currentMode === 'syllables') {
-            const pool = syllablesLevel === 1 ? syllablesN1 : syllablesN2;
-            currentValue = pool[Math.floor(Math.random() * pool.length)];
+            const poolKey = syllablesLevel === 1 ? 'syllablesN1' : 'syllablesN2';
+            const rawSource = syllablesLevel === 1 ? rawSyllablesN1 : rawSyllablesN2;
+            currentValue = getNextFromPool(poolKey, () => rawSource);
             mainDisplay.innerText = currentValue;
             speak(currentValue, true);
         }
@@ -493,6 +531,9 @@
 
     function startQuiz() {
         currentMode = 'quiz';
+        pools.quizNumbers = [];
+        pools.quizSylN1 = [];
+        pools.quizSylN2 = [];
         openScreen('screenQuiz');
         nextQuizQuestion();
     }
@@ -536,7 +577,12 @@
         seqDisplay.style.display = 'none';
 
         if (quizCategory === 'numbers') {
-            quizTarget = Math.floor(Math.random() * 1002);
+            quizTarget = getNextFromPool('quizNumbers', () => {
+                let list = [];
+                for (let i = 0; i <= 1000; i++) list.push(i);
+                return list;
+            });
+            
             micBtn.style.display = 'inline-flex';
 
             if (quizMode === 1) {
@@ -546,7 +592,7 @@
 
                 let choices = [quizTarget];
                 while (choices.length < 4) {
-                    let rand = Math.floor(Math.random() * 1002);
+                    let rand = Math.floor(Math.random() * 1001);
                     if (!choices.includes(rand)) choices.push(rand);
                 }
                 choices.sort(() => Math.random() - 0.5);
@@ -576,7 +622,7 @@
                 speak(quizTarget.toString());
             }
         } else if (quizCategory === 'sequence') {
-            const startNum = Math.floor(Math.random() * 996);
+            const startNum = Math.floor(Math.random() * 995);
             quizTarget = startNum + 4; 
 
             prompt.innerText = "Quel est le nombre manquant dans la suite ?";
@@ -601,7 +647,7 @@
 
             let choices = [quizTarget];
             while (choices.length < 4) {
-                let rand = Math.floor(Math.random() * 1002);
+                let rand = Math.floor(Math.random() * 1001);
                 if (!choices.includes(rand)) choices.push(rand);
             }
             choices.sort(() => Math.random() - 0.5);
@@ -617,8 +663,10 @@
             speak("Trouve le nombre manquant dans la suite !");
 
         } else if (quizCategory === 'syllables') {
-            const pool = quizSylLevel === 1 ? syllablesN1 : syllablesN2;
-            quizTarget = pool[Math.floor(Math.random() * pool.length)];
+            const poolKey = quizSylLevel === 1 ? 'quizSylN1' : 'quizSylN2';
+            const rawSource = quizSylLevel === 1 ? rawSyllablesN1 : rawSyllablesN2;
+            
+            quizTarget = getNextFromPool(poolKey, () => rawSource);
 
             prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
             bigDisplay.style.display = 'none';
@@ -627,7 +675,7 @@
 
             let choices = [quizTarget];
             while (choices.length < 4) {
-                let randSyl = pool[Math.floor(Math.random() * pool.length)];
+                let randSyl = rawSource[Math.floor(Math.random() * rawSource.length)];
                 if (!choices.includes(randSyl)) choices.push(randSyl);
             }
             choices.sort(() => Math.random() - 0.5);
