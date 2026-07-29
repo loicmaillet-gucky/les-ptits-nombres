@@ -36,7 +36,6 @@
         .mic-btn { background: #9B59B6; }
         .mic-btn.listening { background: #E74C3C; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 100%; max-width: 300px; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -54,14 +53,7 @@
         <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
         
         <div style="margin-top:25px; text-align:left; font-size:14px; background:#f9f9f9; padding:15px; border-radius:8px;">
-            <label style="font-weight:bold;">🗣️ Voix Synthèse Vocale (FR-FR) :</label><br>
-            <select id="voiceSelect" onchange="changeVoice()">
-                <option value="duck">🦆 Canard Enjoué</option>
-                <option value="hero">🚀 Super-Héros</option>
-                <option value="alien">👽 Alien de l'Espace</option>
-                <option value="speaker">📻 Présentateur TV</option>
-            </select>
-            <button class="btn-action" style="font-size:12px; padding:4px 8px;" onclick="testSpeech()">🔊 Tester la voix</button>
+            <button class="btn-action" style="font-size:14px; padding:6px 12px;" onclick="testSpeech()">🔊 Tester la voix (fr-FR)</button>
             <br><br>
             <label><input type="checkbox" id="autoCheck"> Défilement automatique</label><br><br>
             <label>Délai (sec) : <input type="number" id="autoDelay" value="4" min="1" style="width:50px;"></label>
@@ -161,11 +153,10 @@
     let quizTarget = '';
     let quizMode = 1;             
 
-    let activeVoiceType = 'duck';
     let frenchVoices = [];
     let activeRecognition = null;
 
-    // Épellation phonétique des lettres isolées en français
+    // Épellation phonétique des lettres isolées
     const frenchLetterSpellings = {
         'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'É':'É', 'È':'È', 'F':'Èf', 'G':'Gé', 'H':'Hache',
         'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
@@ -188,7 +179,7 @@
         "eau", "ein", "oin", "san", "son", "toi", "vou"
     ];
 
-    // Dictionnaire d'ajustement phonétique
+    // Dictionnaire d'ajustement phonétique pour synthèse vocale française
     const phoneticAdjustments = {
         "be": "beu",
         "se": "seu",
@@ -201,23 +192,20 @@
         "re": "reu",
         "te": "teu",
         "ve": "veu",
-        "bé": "bé",
-        "sé": "sé",
-        "an": "an",
-        "en": "en",
         "in": "ain",
-        "on": "on",
-        "un": "un",
-        "ou": "ou",
-        "au": "ô",
+        "ein": "ain",
+        "oin": "ouin",
+        "san": "ssan",
+        "son": "sson",
+        "sac": "sak",
+        "top": "tope",
+        "mer": "mèr",
+        "es": "èss",
+        "tra": "tra",
+        "dra": "dra",
         "eu": "euh",
         "eau": "ô",
-        "ein": "ain",
-        "oin": "ouhein",
-        "toi": "toi",
-        "vou": "vou",
-        "san": "san",
-        "son": "son"
+        "au": "ô"
     };
 
     const rewards = [
@@ -237,14 +225,13 @@
         if ('speechSynthesis' in window) {
             const allVoices = window.speechSynthesis.getVoices();
             
-            // FILTRAGE STRICT FR-FR : On ne conserve QUE les voix strictement françaises métropolitaines (fr-FR / fr_FR)
+            // Filtrage strict FR-FR
             frenchVoices = allVoices.filter(v => {
                 if (!v.lang) return false;
                 const langLower = v.lang.toLowerCase().replace('_', '-');
                 return langLower === 'fr-fr';
             });
 
-            // En cas d'absence totale de voix taguée strictement fr-FR, sécurité de secours avec fr
             if (frenchVoices.length === 0) {
                 frenchVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
             }
@@ -258,13 +245,8 @@
         }
     }
 
-    function changeVoice() {
-        const select = document.getElementById('voiceSelect');
-        activeVoiceType = select.value;
-    }
-
     function testSpeech() {
-        speak("Bonjour, voici un test avec la voix strictement française.");
+        speak("Bonjour, prononciation exacte des syllabes françaises.");
     }
 
     document.addEventListener('click', () => {
@@ -308,33 +290,9 @@
 
         const utterance = new SpeechSynthesisUtterance(textToSay);
         utterance.lang = 'fr-FR';
+        utterance.pitch = 1.0;
+        utterance.rate = 0.5; // Rythme posé pour la clarté pédagogique
 
-        let pitch = 1.0;
-        let rate = 0.4;
-
-        switch(activeVoiceType) {
-            case 'duck':
-                pitch = 1.8;
-                rate = 0.55;
-                break;
-            case 'hero':
-                pitch = 0.5;
-                rate = 0.35;
-                break;
-            case 'alien':
-                pitch = 0.2;
-                rate = 0.65;
-                break;
-            case 'speaker':
-                pitch = 1.0;
-                rate = 0.45;
-                break;
-        }
-
-        utterance.pitch = pitch;
-        utterance.rate = rate;
-
-        // Application de la voix strictement fr-FR
         if (frenchVoices.length > 0) {
             const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
             utterance.voice = preferredVoice;
