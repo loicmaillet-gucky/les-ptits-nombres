@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu Éducatif - Nombres & Syllabes</title>
+    <title>Jeu Éducatif - Nombres</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -43,12 +43,10 @@
 <div class="container">
     <!-- ÉCRAN MENU -->
     <div id="screenMenu" class="screen active">
-        <h1>Apprentissage & Jeux</h1>
+        <h1>Apprentissage des Nombres</h1>
         <div class="btn-grid">
             <button class="btn" onclick="startNumbers(0, 1000)">Nombres (0-1000)</button>
             <button class="btn" onclick="startSequence()">Suite de Nombres</button>
-            <button class="btn" onclick="startLetters()">Lettres</button>
-            <button class="btn" onclick="startSyllables()">Syllabes</button>
         </div>
         <button class="btn" style="background:#F39C12; width:100%;" onclick="startQuiz()">🎯 Mode Quiz / Exercices</button>
         
@@ -60,16 +58,6 @@
     <!-- ÉCRAN AFFICHAGE -->
     <div id="screenDisplay" class="screen">
         <h2 id="displayTitle">---</h2>
-        
-        <div id="lettersToggle" class="toggle-group" style="display:none;">
-            <button id="btnMAJ" class="btn-toggle active" onclick="setCase(true)">MAJUSCULES</button>
-            <button id="btnMIN" class="btn-toggle" onclick="setCase(false)">minuscules</button>
-        </div>
-
-        <div id="syllablesToggle" class="toggle-group" style="display:none;">
-            <button id="btnSylN1" class="btn-toggle active" onclick="setSyllablesLevel(1)">2 Lettres (Niveau 1)</button>
-            <button id="btnSylN2" class="btn-toggle" onclick="setSyllablesLevel(2)">3 Lettres (Niveau 2)</button>
-        </div>
 
         <div id="mainText" class="display-box">--</div>
         <div id="sequenceArea" class="seq-area" style="display:none;"></div>
@@ -94,17 +82,11 @@
         <div class="toggle-group">
             <button id="btnQuizCatNumbers" class="btn-toggle active" onclick="setQuizCategory('numbers')">Nombres</button>
             <button id="btnQuizCatSeq" class="btn-toggle" onclick="setQuizCategory('sequence')">Suites</button>
-            <button id="btnQuizCatSyllables" class="btn-toggle" onclick="setQuizCategory('syllables')">Syllabes</button>
         </div>
 
         <div id="quizTypeGroup" class="toggle-group">
             <button id="btnQuizMode1" class="btn-toggle active" onclick="setQuizMode(1)">Écoute ➔ Choisis</button>
             <button id="btnQuizMode2" class="btn-toggle" onclick="setQuizMode(2)">Lis ➔ Répète</button>
-        </div>
-
-        <div id="quizSylGroup" class="toggle-group" style="display:none;">
-            <button id="btnQuizSylN1" class="btn-toggle active" onclick="setQuizSylLevel(1)">2 Lettres</button>
-            <button id="btnQuizSylN2" class="btn-toggle" onclick="setQuizSylLevel(2)">3 Lettres</button>
         </div>
 
         <p id="quizPrompt" style="font-size:18px; font-weight:bold; margin-top:15px;">Écoute et choisis le bon nombre :</p>
@@ -135,16 +117,12 @@
     let currentMode = '';
     let currentMinNumber = 0;
     let currentMaxNumber = 1000;
-    let isUppercase = true;
-    let currentRawLetter = 'A';
-    let syllablesLevel = 1;
     let currentValue = '';
     let currentSeqTarget = 0;
     let isSeqRevealed = false;
 
     let quizScore = 0;
     let quizCategory = 'numbers'; 
-    let quizSylLevel = 1;         
     let quizTarget = '';
     let quizMode = 1;             
 
@@ -154,12 +132,7 @@
     // --- GESTION DES POOLS SANS RÉPÉTITION ---
     let pools = {
         numbers: [],
-        letters: [],
-        syllablesN1: [],
-        syllablesN2: [],
-        quizNumbers: [],
-        quizSylN1: [],
-        quizSylN2: []
+        quizNumbers: []
     };
 
     function shuffleArray(array) {
@@ -178,88 +151,10 @@
         return pools[poolName].pop();
     }
 
-    // --- NOUVELLE BASE DE DONNÉES DE SYLLABES ---
-    const rawSyllablesN1 = [
-        "bo", "ca", "co", "cu", "de", "do", "fi", "fo", "fu", "ji", "ju",
-        "la", "li", "lo", "me", "mi", "mo", "mu", "na", "ni", "no", "nu",
-        "pa", "po", "pu", "re", "ri", "ro", "ru", "sa", "si", "so", "su",
-        "te", "ti", "to", "va", "vi", "vo", "am", "en", "om", "oi", "ai",
-        "ei", "eu", "us", "ut", "if", "op"
-    ];
-
-    const rawSyllablesN2 = [
-        "bla", "bli", "blo", "blu", "bro", "bru", "cla", "cli", "clo", "cru",
-        "dri", "dro", "dru", "fla", "fli", "flo", "flu", "fra", "fri", "fru",
-        "gli", "glo", "gra", "gri", "gro", "pli", "plo", "plu", "pri", "pru",
-        "tri", "tro", "tru", "bac", "bal", "bol", "bus", "cap", "car", "coq",
-        "duc", "dur", "fil", "lac", "mal", "net", "nul", "par", "pic", "pur",
-        "rap", "roc", "sec", "sol", "sur", "tac", "tir", "toc", "vif", "vis",
-        "cha", "chi", "cho", "chu", "gui", "gua", "lou", "mou", "pou", "rou",
-        "sou", "tou", "pan", "pin", "pon", "ran", "ron", "tan", "ton", "moi",
-        "roi", "soi"
-    ];
-
-    const rawLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
-
-    // --- CORRESPONDANCE PHONÉTIQUE EXACTE (TRANSCRIPTION SIMPLIFIÉE) ---
-    const phoneticAdjustments = {
-        // 2 Lettres
-        "ca": "ka",
-        "co": "ko",
-        "cu": "ku",
-        "de": "deu",
-        "me": "meu",
-        "re": "reu",
-        "te": "teu",
-        "am": "an",
-        "en": "an",
-        "om": "on",
-        "oi": "ou-a",
-        "ai": "è",
-        "ei": "è",
-        "eu": "eu",
-        "us": "uss",
-        "ut": "ut",
-        "if": "if",
-        "op": "op",
-        
-        // 3 Lettres
-        "cla": "kla",
-        "cli": "kli",
-        "clo": "klo",
-        "cru": "kru",
-        "bac": "bak",
-        "bus": "buss",
-        "cap": "kap",
-        "car": "kar",
-        "coq": "kok",
-        "duc": "duk",
-        "lac": "lak",
-        "net": "nèt",
-        "pic": "pik",
-        "roc": "rok",
-        "sec": "sèk",
-        "tac": "tak",
-        "toc": "tok",
-        "vis": "viss",
-        "gui": "ghi",
-        "gua": "goua",
-        "moi": "mou-a",
-        "roi": "rou-a",
-        "soi": "sou-a"
-    };
-
-    const frenchLetterSpellings = {
-        'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'É':'É', 'È':'È', 'F':'Èf', 'G':'Gé', 'H':'Hache',
-        'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
-        'Q':'Ku', 'R':'Ère', 'S':'Èsse', 'T':'Té', 'U':'U', 'V':'Vé', 'W':'Double Vé',
-        'X':'Iks', 'Y':'Igrek', 'Z':'Zède'
-    };
-
     const rewards = [
         { icon: "🎉", word: "Bravo !" },
         { icon: "⭐", word: "Super !" },
-        { icon: "🏆", word: "Champion des Syllabes !" }
+        { icon: "🏆", word: "Champion des Nombres !" }
     ];
 
     function stopRecognition() {
@@ -284,7 +179,7 @@
     }
 
     function testSpeech() {
-        speak("sec", true);
+        speak(42);
     }
 
     document.addEventListener('click', () => {
@@ -293,15 +188,7 @@
         }
     }, { capture: true });
 
-    function formatSyllablePhonetics(syl) {
-        let clean = syl.toLowerCase().trim();
-        if (phoneticAdjustments[clean]) {
-            return phoneticAdjustments[clean];
-        } 
-        return clean;
-    }
-
-    function speak(text, forceSyllables = false) {
+    function speak(text) {
         if (!('speechSynthesis' in window)) return;
         if (text === undefined || text === null || text === '') return;
 
@@ -311,20 +198,10 @@
         synth.cancel();
         synth.resume();
 
-        let rawText = text.toString();
-        let textToSay = rawText;
-
-        if (forceSyllables || currentMode === 'syllables' || (currentMode === 'quiz' && quizCategory === 'syllables')) {
-            textToSay = formatSyllablePhonetics(rawText);
-        } else if (currentMode === 'letters') {
-            const upperChar = rawText.toUpperCase();
-            textToSay = frenchLetterSpellings[upperChar] || rawText;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(textToSay);
+        const utterance = new SpeechSynthesisUtterance(text.toString());
         utterance.lang = 'fr-FR';
         utterance.pitch = 1.0;
-        utterance.rate = 0.6; 
+        utterance.rate = 0.8; 
 
         if (frenchVoices.length > 0) {
             const preferredVoice = frenchVoices.find(v => v.default) || frenchVoices[0];
@@ -352,8 +229,6 @@
         currentMaxNumber = max;
         pools.numbers = []; 
         document.getElementById('displayTitle').innerText = `Nombres (${min}-${max})`;
-        document.getElementById('lettersToggle').style.display = 'none';
-        document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'none';
         document.getElementById('btnDisplayMic').style.display = 'inline-flex';
         document.getElementById('displaySpeechStatus').innerText = '';
@@ -365,61 +240,11 @@
     function startSequence() {
         currentMode = 'sequence';
         document.getElementById('displayTitle').innerText = "Suite de Nombres";
-        document.getElementById('lettersToggle').style.display = 'none';
-        document.getElementById('syllablesToggle').style.display = 'none';
         document.getElementById('mainText').style.display = 'none';
         document.getElementById('sequenceArea').style.display = 'flex';
         document.getElementById('btnDisplayMic').style.display = 'inline-flex';
         document.getElementById('displaySpeechStatus').innerText = '';
         openScreen('screenDisplay');
-        nextItem();
-    }
-
-    function startLetters() {
-        currentMode = 'letters';
-        pools.letters = [];
-        document.getElementById('displayTitle').innerText = "Lettres";
-        document.getElementById('lettersToggle').style.display = 'flex';
-        document.getElementById('syllablesToggle').style.display = 'none';
-        document.getElementById('sequenceArea').style.display = 'none';
-        document.getElementById('btnDisplayMic').style.display = 'none';
-        document.getElementById('displaySpeechStatus').innerText = '';
-        document.getElementById('mainText').style.display = 'block';
-        openScreen('screenDisplay');
-        nextItem();
-    }
-
-    function setCase(upper) {
-        isUppercase = upper;
-        document.getElementById('btnMAJ').classList.toggle('active', upper);
-        document.getElementById('btnMIN').classList.toggle('active', !upper);
-        
-        if (currentMode === 'letters') {
-            currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
-            document.getElementById('mainText').innerText = currentValue;
-            speak(currentValue);
-        }
-    }
-
-    function startSyllables() {
-        currentMode = 'syllables';
-        pools.syllablesN1 = [];
-        pools.syllablesN2 = [];
-        document.getElementById('displayTitle').innerText = "Syllabes";
-        document.getElementById('lettersToggle').style.display = 'none';
-        document.getElementById('syllablesToggle').style.display = 'flex';
-        document.getElementById('sequenceArea').style.display = 'none';
-        document.getElementById('btnDisplayMic').style.display = 'none';
-        document.getElementById('displaySpeechStatus').innerText = '';
-        document.getElementById('mainText').style.display = 'block';
-        openScreen('screenDisplay');
-        nextItem();
-    }
-
-    function setSyllablesLevel(lvl) {
-        syllablesLevel = lvl;
-        document.getElementById('btnSylN1').classList.toggle('active', lvl === 1);
-        document.getElementById('btnSylN2').classList.toggle('active', lvl === 2);
         nextItem();
     }
 
@@ -466,18 +291,6 @@
                 }
                 seqArea.appendChild(box);
             }
-
-        } else if (currentMode === 'letters') {
-            currentRawLetter = getNextFromPool('letters', () => rawLetters);
-            currentValue = isUppercase ? currentRawLetter : currentRawLetter.toLowerCase();
-            mainDisplay.innerText = currentValue;
-            speak(currentValue);
-        } else if (currentMode === 'syllables') {
-            const poolKey = syllablesLevel === 1 ? 'syllablesN1' : 'syllablesN2';
-            const rawSource = syllablesLevel === 1 ? rawSyllablesN1 : rawSyllablesN2;
-            currentValue = getNextFromPool(poolKey, () => rawSource);
-            mainDisplay.innerText = currentValue;
-            speak(currentValue, true);
         }
     }
 
@@ -485,7 +298,7 @@
         if (currentMode === 'sequence') {
             speak(currentSeqTarget.toString());
         } else {
-            speak(currentValue.toString(), currentMode === 'syllables'); 
+            speak(currentValue.toString()); 
         }
     }
 
@@ -546,8 +359,6 @@
     function startQuiz() {
         currentMode = 'quiz';
         pools.quizNumbers = [];
-        pools.quizSylN1 = [];
-        pools.quizSylN2 = [];
         openScreen('screenQuiz');
         nextQuizQuestion();
     }
@@ -556,11 +367,7 @@
         quizCategory = cat;
         document.getElementById('btnQuizCatNumbers').classList.toggle('active', cat === 'numbers');
         document.getElementById('btnQuizCatSeq').classList.toggle('active', cat === 'sequence');
-        document.getElementById('btnQuizCatSyllables').classList.toggle('active', cat === 'syllables');
-        
         document.getElementById('quizTypeGroup').style.display = cat === 'numbers' ? 'flex' : 'none';
-        document.getElementById('quizSylGroup').style.display = cat === 'syllables' ? 'flex' : 'none';
-        
         nextQuizQuestion();
     }
 
@@ -568,13 +375,6 @@
         quizMode = mode;
         document.getElementById('btnQuizMode1').classList.toggle('active', mode === 1);
         document.getElementById('btnQuizMode2').classList.toggle('active', mode === 2);
-        nextQuizQuestion();
-    }
-
-    function setQuizSylLevel(lvl) {
-        quizSylLevel = lvl;
-        document.getElementById('btnQuizSylN1').classList.toggle('active', lvl === 1);
-        document.getElementById('btnQuizSylN2').classList.toggle('active', lvl === 2);
         nextQuizQuestion();
     }
 
@@ -675,45 +475,14 @@
             });
 
             speak("Trouve le nombre manquant dans la suite !");
-
-        } else if (quizCategory === 'syllables') {
-            const poolKey = quizSylLevel === 1 ? 'quizSylN1' : 'quizSylN2';
-            const rawSource = quizSylLevel === 1 ? rawSyllablesN1 : rawSyllablesN2;
-            
-            quizTarget = getNextFromPool(poolKey, () => rawSource);
-
-            prompt.innerText = "Écoute et sélectionne la bonne syllabe :";
-            bigDisplay.style.display = 'none';
-            listenBtn.style.display = 'inline-flex';
-            micBtn.style.display = 'none';
-
-            let choices = [quizTarget];
-            while (choices.length < 4) {
-                let randSyl = rawSource[Math.floor(Math.random() * rawSource.length)];
-                if (!choices.includes(randSyl)) choices.push(randSyl);
-            }
-            choices.sort(() => Math.random() - 0.5);
-
-            choices.forEach(val => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-choice';
-                btn.innerText = val;
-                btn.onclick = () => checkQuizAnswer(val);
-                choicesContainer.appendChild(btn);
-            });
-
-            speakCurrentQuiz();
         }
     }
 
     function speakCurrentQuiz() { 
-        const isSyl = (quizCategory === 'syllables');
-        speak(quizTarget.toString(), isSyl); 
+        speak(quizTarget.toString()); 
     }
 
     function startVoiceRecognition() {
-        if (quizCategory === 'syllables') return;
-
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             alert("La reconnaissance vocale n'est pas disponible sur votre navigateur.");
