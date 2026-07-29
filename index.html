@@ -151,7 +151,7 @@
     let frenchVoices = [];
     let activeRecognition = null;
 
-    // Épellation phonétique des lettres isolées
+    // Épellation phonétique stricte des lettres isolées
     const frenchLetterSpellings = {
         'A':'A', 'B':'Bé', 'C':'Cé', 'D':'Dé', 'E':'E', 'É':'É', 'È':'È', 'F':'Èf', 'G':'Gé', 'H':'Hache',
         'I':'I', 'J':'Ji', 'K':'Ka', 'L':'Èl', 'M':'Èm', 'N':'Ène', 'O':'O', 'P':'Pé',
@@ -174,10 +174,9 @@
         "eau", "ein", "oin", "san", "son", "toi", "vou"
     ];
 
-    // Dictionnaire d'ajustement phonétique pour synthèse vocale française
+    // Ajustements phonétiques sans aucun son "Sse"
     const phoneticAdjustments = {
         "be": "beu",
-        "se": "seu",
         "de": "deu",
         "fe": "feu",
         "le": "leu",
@@ -190,14 +189,8 @@
         "in": "ain",
         "ein": "un",
         "oin": "ouin",
-        "san": "ssan",
-        "son": "sson",
-        "sac": "sak",
         "top": "tope",
         "mer": "mèr",
-        "es": "èss",
-        "tra": "tra",
-        "dra": "dra",
         "eu": "euh",
         "eau": "ô",
         "au": "ô"
@@ -240,7 +233,7 @@
     }
 
     function testSpeech() {
-        speak("Bonjour, prononciation exacte des syllabes françaises.");
+        speak("sac", true);
     }
 
     document.addEventListener('click', () => {
@@ -253,14 +246,15 @@
         let clean = syl.toLowerCase().trim();
         
         if (phoneticAdjustments[clean]) {
-            return phoneticAdjustments[clean];
-        }
-        
-        if (clean.length > 1 && clean.endsWith('e') && !clean.endsWith('ee') && !clean.endsWith('ie')) {
+            clean = phoneticAdjustments[clean];
+        } else if (clean.length > 1 && clean.endsWith('e') && !clean.endsWith('ee') && !clean.endsWith('ie')) {
             clean = clean.slice(0, -1) + 'eu';
         }
         
-        return clean;
+        // Remplacement strict de toute lettre 's' par la prononciation 'Èsse'
+        clean = clean.replace(/s+/g, ' Èsse ');
+        
+        return clean.trim();
     }
 
     function speak(text, forceSyllables = false) {
@@ -283,6 +277,9 @@
             const spelled = spelledArr.join('... ');
             const phoneticSyllable = formatSyllablePhonetics(rawText);
             textToSay = `${spelled}... ... ${phoneticSyllable}`;
+        } else if (currentMode === 'letters') {
+            const upperChar = rawText.toUpperCase();
+            textToSay = frenchLetterSpellings[upperChar] || rawText;
         }
 
         const utterance = new SpeechSynthesisUtterance(textToSay);
