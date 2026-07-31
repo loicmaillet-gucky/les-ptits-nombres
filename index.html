@@ -118,12 +118,16 @@
     let currentMinNumber = 0;
     let currentMaxNumber = 1000;
     let currentValue = '';
+    let currentSeqPrev = 0;
     let currentSeqTarget = 0;
+    let currentSeqNext = 0;
     let isSeqRevealed = false;
 
     let quizScore = 0;
     let quizCategory = 'numbers'; 
     let quizTarget = '';
+    let quizPrev = 0;
+    let quizNext = 0;
     let quizMode = 1;             
 
     let frenchVoices = [];
@@ -179,7 +183,7 @@
     }
 
     function testSpeech() {
-        speak(42);
+        speak("Trouve le nombre entre 581 et 583");
     }
 
     document.addEventListener('click', () => {
@@ -254,7 +258,7 @@
         const targetBox = document.getElementById('seqTargetBox');
         if (targetBox) {
             targetBox.innerText = currentSeqTarget;
-            speak(`Le nombre manquant est ${currentSeqTarget}`);
+            speak(`C'est le nombre ${currentSeqTarget}`);
         }
     }
 
@@ -274,21 +278,22 @@
             speak(currentValue);
         } else if (currentMode === 'sequence') {
             isSeqRevealed = false;
-            const prevNum = Math.floor(Math.random() * 998); // N-1
-            currentSeqTarget = prevNum + 1;                  // Nombre cible
-            const nextNum = prevNum + 2;                     // N+1
+            currentSeqPrev = Math.floor(Math.random() * 998); // N-1
+            currentSeqTarget = currentSeqPrev + 1;             // Cible
+            currentSeqNext = currentSeqPrev + 2;               // N+1
             
             seqArea.innerHTML = `
-                <div class="seq-box">${prevNum}</div>
+                <div class="seq-box">${currentSeqPrev}</div>
                 <div class="seq-box missing" id="seqTargetBox">?</div>
-                <div class="seq-box">${nextNum}</div>
+                <div class="seq-box">${currentSeqNext}</div>
             `;
+            speakCurrent();
         }
     }
 
     function speakCurrent() { 
         if (currentMode === 'sequence') {
-            speak(currentSeqTarget.toString());
+            speak(`Trouve le nombre entre ${currentSeqPrev} et ${currentSeqNext}`);
         } else {
             speak(currentValue.toString()); 
         }
@@ -428,20 +433,20 @@
                 speak(quizTarget.toString());
             }
         } else if (quizCategory === 'sequence') {
-            const prevNum = Math.floor(Math.random() * 998); // N-1
-            quizTarget = prevNum + 1;                        // Nombre cible
-            const nextNum = prevNum + 2;                     // N+1
+            quizPrev = Math.floor(Math.random() * 998); // N-1
+            quizTarget = quizPrev + 1;                  // Cible
+            quizNext = quizPrev + 2;                    // N+1
 
             prompt.innerText = "Quel est le nombre manquant dans la suite ?";
             bigDisplay.style.display = 'none';
-            listenBtn.style.display = 'none';
+            listenBtn.style.display = 'inline-flex';
             micBtn.style.display = 'inline-flex';
             seqDisplay.style.display = 'flex';
             
             seqDisplay.innerHTML = `
-                <div class="seq-box">${prevNum}</div>
+                <div class="seq-box">${quizPrev}</div>
                 <div class="seq-box missing">?</div>
-                <div class="seq-box">${nextNum}</div>
+                <div class="seq-box">${quizNext}</div>
             `;
 
             let choices = [quizTarget];
@@ -459,12 +464,16 @@
                 choicesContainer.appendChild(btn);
             });
 
-            speak("Trouve le nombre manquant dans la suite !");
+            speakCurrentQuiz();
         }
     }
 
     function speakCurrentQuiz() { 
-        speak(quizTarget.toString()); 
+        if (quizCategory === 'sequence') {
+            speak(`Trouve le nombre entre ${quizPrev} et ${quizNext}`);
+        } else {
+            speak(quizTarget.toString()); 
+        }
     }
 
     function startVoiceRecognition() {
