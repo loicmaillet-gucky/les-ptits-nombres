@@ -22,8 +22,8 @@
         .btn-toggle { background: #e0e0e0; color: #333; padding: 10px; border-radius: 6px; border: none; cursor: pointer; margin: 0 5px; }
         .btn-toggle.active { background: #4A90E2; color: white; }
         .display-box { font-size: 72px; font-weight: bold; color: #2C3E50; margin: 30px 0; min-height: 100px; display: flex; align-items: center; justify-content: center; }
-        .seq-area { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
-        .seq-box { width: 60px; height: 60px; background: #eef2f5; border: 2px solid #bdc3c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        .seq-area { display: flex; gap: 15px; justify-content: center; margin: 30px 0; }
+        .seq-box { width: 80px; height: 80px; background: #eef2f5; border: 2px solid #bdc3c7; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; }
         .seq-box.missing { border-color: #E67E22; background: #FDEDEC; color: #E67E22; }
         .quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
         .quiz-choice { background: #f8f9fa; border: 2px solid #e9ecef; font-size: 24px; font-weight: bold; padding: 20px; border-radius: 10px; cursor: pointer; }
@@ -274,23 +274,15 @@
             speak(currentValue);
         } else if (currentMode === 'sequence') {
             isSeqRevealed = false;
-            const startNum = Math.floor(Math.random() * 995);
-            currentSeqTarget = startNum + 4;
+            const prevNum = Math.floor(Math.random() * 998); // N-1
+            currentSeqTarget = prevNum + 1;                  // Nombre cible
+            const nextNum = prevNum + 2;                     // N+1
             
-            seqArea.innerHTML = '';
-            for (let i = 0; i < 6; i++) {
-                const num = startNum + i;
-                const box = document.createElement('div');
-                box.className = 'seq-box';
-                if (i === 4) {
-                    box.classList.add('missing');
-                    box.innerText = '?';
-                    box.id = 'seqTargetBox';
-                } else {
-                    box.innerText = num;
-                }
-                seqArea.appendChild(box);
-            }
+            seqArea.innerHTML = `
+                <div class="seq-box">${prevNum}</div>
+                <div class="seq-box missing" id="seqTargetBox">?</div>
+                <div class="seq-box">${nextNum}</div>
+            `;
         }
     }
 
@@ -436,28 +428,21 @@
                 speak(quizTarget.toString());
             }
         } else if (quizCategory === 'sequence') {
-            const startNum = Math.floor(Math.random() * 995);
-            quizTarget = startNum + 4; 
+            const prevNum = Math.floor(Math.random() * 998); // N-1
+            quizTarget = prevNum + 1;                        // Nombre cible
+            const nextNum = prevNum + 2;                     // N+1
 
             prompt.innerText = "Quel est le nombre manquant dans la suite ?";
             bigDisplay.style.display = 'none';
             listenBtn.style.display = 'none';
             micBtn.style.display = 'inline-flex';
             seqDisplay.style.display = 'flex';
-            seqDisplay.innerHTML = '';
-
-            for (let i = 0; i < 6; i++) {
-                const num = startNum + i;
-                const box = document.createElement('div');
-                box.className = 'seq-box';
-                if (i === 4) {
-                    box.classList.add('missing');
-                    box.innerText = '?';
-                } else {
-                    box.innerText = num;
-                }
-                seqDisplay.appendChild(box);
-            }
+            
+            seqDisplay.innerHTML = `
+                <div class="seq-box">${prevNum}</div>
+                <div class="seq-box missing">?</div>
+                <div class="seq-box">${nextNum}</div>
+            `;
 
             let choices = [quizTarget];
             while (choices.length < 4) {
